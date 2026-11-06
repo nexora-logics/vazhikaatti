@@ -9,7 +9,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+Chettan+2:wght@600;700&family=Hind+Vadodara:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manjari:wght@700&family=Hind+Vadodara:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -48,7 +48,7 @@
   }
   .brand { display: flex; align-items: baseline; gap: 10px; }
   .brand h1 {
-    margin: 0; font: 700 30px/1.1 "Baloo Chettan 2", "Hind Vadodara", sans-serif;
+    margin: 0; font: 700 30px/1.2 "Manjari", "Noto Sans Malayalam", "Kartika", sans-serif;
     color: var(--kasavu); letter-spacing: .01em;
   }
   .brand span { font-size: 14px; opacity: .8; }
@@ -139,14 +139,69 @@
   @media (prefers-color-scheme: dark) {
     .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.9) contrast(.9); }
   }
+  .plan-btn {
+    margin-left: auto; align-self: center; border: 1.5px solid var(--kasavu); color: var(--kasavu);
+    background: transparent; border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: 14px; cursor: pointer;
+  }
+  .plan-btn[aria-pressed="true"] { background: var(--kasavu); color: #0E4D45; }
+  #plan { max-width: 760px; margin: 0 auto; }
+  .plan-form { padding: 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .plan-form h2 { margin: 0; font-size: 20px; }
+  .plan-form .row { padding: 0; margin-top: 12px; flex-wrap: wrap; overflow: visible; }
+  .plan-form .actions { margin-top: 14px; }
+  .plan-note { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+  #plan-list { list-style: none; margin: 0; padding: 0; }
+  .stop { display: grid; grid-template-columns: 64px 1fr; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .stop time { font-weight: 600; color: var(--accent); font-size: 15px; padding-top: 1px; }
+  .stop h3 { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.3; }
+  .stop.meal h3::after { content: "Meal"; margin-left: 8px; font-size: 12px; font-weight: 600; color: var(--ok); border: 1px solid currentColor; border-radius: 999px; padding: 0 8px; vertical-align: 2px; }
+  .stop.end { color: var(--muted); }
+  .drive { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+  #plan-actions { padding: 14px 16px; }
   .src { font-size: 12px; color: var(--muted); padding: 12px 16px 24px; }
   .src a { color: inherit; }
+
+  :root { --tbg: #FBF4DC; --red: #B3261E; }
+  @media (prefers-color-scheme: dark) { :root { --tbg: #2A2616; --red: #C8463E; } }
+  .wx { margin: 2px 0 0; font-size: 13px; opacity: .9; display: flex; flex-wrap: wrap; gap: 2px 14px; }
+  .tool {
+    flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 10px;
+    padding: 6px 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .tool[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+  .tool.sos { background: var(--red); border-color: var(--red); color: #fff; }
+  .btn.saved { color: var(--accent); border-color: var(--accent); }
+  .btn.red { background: var(--red); border-color: var(--red); color: #fff; }
+  .btn.big { display: block; width: 100%; text-align: center; padding: 12px; font-size: 16px; margin-top: 10px; }
+  .tbox { background: var(--tbg); padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .tbox h2 { margin: 0 0 6px; font-size: 18px; }
+  .tcard { padding: 8px 0; border-top: 1px solid var(--line); }
+  .tcard h3 { margin: 0; font-size: 16px; }
+  .tcard p { margin: 2px 0; font-size: 14px; }
+  .note { font-size: 14px; color: var(--muted); }
+  .sheet-back { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; justify-content: center; }
+  .sheet {
+    background: var(--surface); color: var(--ink); width: 100%; max-width: 760px; max-height: 85vh; overflow: auto;
+    border-radius: 16px 16px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+  .sheet h2 { margin: 14px 0 6px; font-size: 18px; }
+  .sheet #sheet-title { margin-top: 0; font-size: 20px; }
+  .sheet .x { float: right; }
+  .sheet ul { list-style: none; padding: 0; margin: 6px 0; }
+  .sheet li { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .sheet textarea {
+    width: 100%; min-height: 52px; font: inherit; color: inherit; background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-top: 6px;
+  }
+  .sheet .row { padding: 0; flex-wrap: wrap; overflow: visible; }
+  .sheet pre { white-space: pre-wrap; font: inherit; font-size: 14px; color: var(--muted); margin: 6px 0; }
 </style>
 </head>
 <body>
 <header>
-  <div class="brand"><h1 lang="ml">വഴികാട്ടി</h1><span>Vazhikaatti</span></div>
+  <div class="brand"><h1 lang="ml">വഴികാട്ടി</h1><span>Vazhikaatti</span><button class="plan-btn" id="plan-open" aria-pressed="false">Plan my time</button></div>
   <p id="status" aria-live="polite">Starting…</p>
+  <p id="wx" class="wx" hidden></p>
 </header>
 
 <div class="map-wrap">
@@ -158,6 +213,13 @@
 </div>
 
 <div class="controls">
+  <div class="row" role="group" aria-label="Tools">
+    <button class="tool" id="t-ahead" aria-pressed="false">Ahead of me</button>
+    <button class="tool" id="t-saved">Saved</button>
+    <button class="tool" id="t-audio">Audio guide</button>
+    <button class="tool" id="t-offline">Offline</button>
+    <button class="tool sos" id="t-sos">SOS</button>
+  </div>
   <div class="row" id="cats" role="group" aria-label="Category"></div>
   <div class="row" role="group" aria-label="Filters">
     <select class="opt" id="radius" aria-label="Search distance">
@@ -177,11 +239,49 @@
   </div>
 </div>
 
+<section id="plan" hidden aria-label="Time planner">
+  <div class="plan-form">
+    <h2>Plan my time</h2>
+    <p class="plan-note">Starting now from where you are. Times are estimates.</p>
+    <div class="row" id="hrs" role="group" aria-label="Time available">
+      <button class="opt" data-h="1" aria-pressed="false">1 hr</button>
+      <button class="opt" data-h="2" aria-pressed="false">2 hrs</button>
+      <button class="opt" data-h="3" aria-pressed="true">3 hrs</button>
+      <button class="opt" data-h="4" aria-pressed="false">4 hrs</button>
+      <button class="opt" data-h="6" aria-pressed="false">Half day</button>
+    </div>
+    <div class="row" role="group" aria-label="Meal">
+      <button class="opt" id="p-meal" aria-pressed="true">Include a meal stop</button>
+      <button class="opt" id="p-veg" aria-pressed="false">Veg meal only</button>
+    </div>
+    <div class="actions">
+      <button class="btn go" id="p-go">Make my plan</button>
+      <button class="btn" id="p-close">Back to places</button>
+    </div>
+  </div>
+  <ol id="plan-list"></ol>
+  <div class="actions" id="plan-actions" hidden>
+    <a class="btn go" id="p-route" target="_blank" rel="noopener">Open full route in Google Maps</a>
+    <button class="btn" id="p-share">Share plan</button>
+    <button class="btn" id="p-save">Save plan</button>
+    <button class="btn" id="p-again">Make another plan</button>
+  </div>
+</section>
+
 <main>
+  <div id="temples"></div>
   <div id="msg" hidden></div>
   <ul id="list"></ul>
   <p class="src">Place data from <a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a>, <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> and <a href="https://www.wikipedia.org" target="_blank" rel="noopener">Wikipedia</a>. Ratings and reviews open in Google Maps.</p>
 </main>
+
+<div id="sheet-back" class="sheet-back" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <button class="btn x" id="sheet-x">Close</button>
+    <h2 id="sheet-title"></h2>
+    <div id="sheet-body"></div>
+  </div>
+</div>
 
 <script>
 /* ===== Settings ===== */
@@ -320,7 +420,7 @@ function buildControls() {
   $("locate").onclick = () => {
     if (!S.me) return startGPS();
     S.map.panTo(S.me);
-    if (!S.center || km(S.me, S.center) > 0.5) search(S.me);
+    if (!S.center || km(searchCenter(), S.center) > 0.5) search(searchCenter());
   };
 }
 
@@ -352,13 +452,21 @@ function onPos(p) {
   const me = { lat: p.coords.latitude, lng: p.coords.longitude };
   const first = !S.me;
   S.me = me;
+  const c = p.coords;
+  if (c.heading != null && !isNaN(c.heading) && (c.speed || 0) > 2) S.heading = c.heading;
+  else if (S.lastFix && km(S.lastFix, me) > 0.2) S.heading = bearing(S.lastFix, me);
+  if (!S.lastFix || km(S.lastFix, me) > 0.2) S.lastFix = me;
+  loadWeather(me);
+  autoGuide(me);
   if (!S.meMarker) {
     S.meMarker = L.marker(me, { icon: L.divIcon({ className: "", html: '<div class="me"></div>', iconSize: [18, 18] }),
       title: "You are here", zIndexOffset: 1000, keyboard: false }).addTo(S.map);
   } else S.meMarker.setLatLng(me);
 
   if (first) { S.map.setView(me, 14); search(me); }
-  else if (S.auto && !S.busy && S.center && km(me, S.center) > CONFIG.AUTO_REFRESH_KM) { S.map.panTo(me); search(me); }
+  else if ((S.auto || S.ahead) && !S.busy && S.center && km(searchCenter(), S.center) > (S.ahead ? S.radius / 2000 : CONFIG.AUTO_REFRESH_KM)) {
+    S.map.panTo(me); search(searchCenter());
+  }
   else updateDistances();
 }
 
@@ -369,6 +477,7 @@ function onGeoErr(e) {
     ? "Allow location for this site in your browser settings, then reload. You can also drag the map and tap Search this area."
     : "Couldn't get a GPS fix. Move to an open area, or drag the map and tap Search this area.";
   showMsg("Location isn't available", why);
+  loadWeather(CONFIG.START);
   search(CONFIG.START);
 }
 
@@ -476,12 +585,19 @@ async function search(center) {
 
   const cached = S.cache.get(key);
   if (cached) { S.places = cached; S.busy = false; return render(); }
+  if (!navigator.onLine) {
+    const off = offlineFor(S.cat, center, S.radius);
+    S.busy = false;
+    if (off) { S.places = cat === CATEGORIES.see ? withTemples(off, center, S.radius) : off; render(); setStatus($("status").textContent + " (saved offline copy)"); return; }
+    S.places = []; render(true);
+    return showMsg("You're offline", "No saved copy of this area. When you have signal, use Offline, then Save this area, before driving on.");
+  }
 
   S.places = []; render(true);
   $("status").innerHTML = `<span class="spin"></span>Looking for ${esc(cat.label.toLowerCase())}…`;
 
   let wiki = [], main = [], keyBad = false;
-  const show = () => { if (myReq === S.req) { S.places = merge(wiki, main); try { render(true); } catch (e) { console.error(e); } } };
+  const show = () => { if (myReq === S.req) { S.places = cat === CATEGORIES.see ? withTemples(merge(wiki, main), center, S.radius) : merge(wiki, main); try { render(true); } catch (e) { console.error(e); } } };
 
   const wikiJob = cat.wiki ? wikiNearby(center, S.radius).then(w => { wiki = w; show(); }).catch(() => {}) : Promise.resolve();
 
@@ -507,6 +623,11 @@ async function search(center) {
     const why = keyBad ? "The Geoapify key was rejected. Check the key in index.html."
       : !hasKey() ? "No Geoapify key is set, and the free backup servers are busy."
       : "The map data servers didn't respond. Check your internet and try again.";
+    const off = offlineFor(S.cat, center, S.radius);
+    if (!S.places.length && off && off.length) {
+      S.places = cat === CATEGORIES.see ? withTemples(off, center, S.radius) : off; render();
+      return setStatus($("status").textContent + " (saved offline copy)");
+    }
     if (!S.places.length) showMsg("Couldn't load places", why, { label: "Try again", run: () => search(center) });
     else setStatus($("status").textContent + " (some places may be missing)");
   }
@@ -539,7 +660,7 @@ function dietOf(p) {
 function visible() {
   const from = S.me || S.center;
   let items = S.places.map(p => ({ ...p, open: isOpenNow(p.hours), dist: from ? km(from, p) : 0 }))
-    .filter(p => p.dist <= S.radius / 1000 + 0.2)
+    .filter(p => !(S.center || from) || km(S.center || from, p) <= S.radius / 1000 + 0.2)
     .filter(p => !S.openNow || p.open !== false)
     .filter(p => !S.diet || S.cat !== "food" || dietOf(p) === S.diet);
   items.sort(S.rank === "near" ? (a, b) => a.dist - b.dist : (a, b) => (b.score - a.score) || (a.dist - b.dist));
@@ -557,7 +678,9 @@ function updateDistances() {
 function render(partial) {
   const items = visible(); S.shown = items;
   const label = CATEGORIES[S.cat].label.toLowerCase();
-  const where = S.me && S.center && km(S.me, S.center) < 0.5 ? "you" : "the map centre";
+  const where = S.ahead && S.heading != null && S.me && S.center && km(S.me, S.center) > 0.5 ? `the road ahead (heading ${dirName(S.heading)})`
+    : S.me && S.center && km(S.me, S.center) < 0.5 ? "you" : "the map centre";
+  renderTemples();
   if (!partial) setStatus(`${items.length} ${label} within ${S.radius / 1000} km of ${where}`);
 
   S.markers.forEach(m => m.remove()); S.markers = []; S.active = -1;
@@ -580,7 +703,10 @@ function render(partial) {
 
     const img = p.photo ? `<img class="thumb" loading="lazy" alt="" src="${esc(p.photo)}">`
                         : `<div class="thumb" aria-hidden="true">${esc((p.name || "?")[0])}</div>`;
-    const open = p.open === true ? `<span class="open">Open now</span>` : p.open === false ? `<span class="shut">Closed now</span>` : "";
+    const tnc = p.temple && p.temple.hours ? nextChange(p.temple.hours) : null;
+    const open = tnc ? `<span class="${tnc.open ? "open" : "shut"}">${esc(tnc.text)}</span>`
+      : p.open === true ? `<span class="open">Open now</span>` : p.open === false ? `<span class="shut">Closed now</span>` : "";
+    const saved = isSaved(p.id);
     const d = S.cat === "food" ? dietOf(p) : "";
     const veg = d === "veg" ? `<span class="open">Veg</span>` : d === "nonveg" ? `<span class="shut">Non-veg</span>` : "";
     const dir = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving`;
@@ -597,6 +723,8 @@ function render(partial) {
         <div class="actions">
           <a class="btn go" href="${dir}" target="_blank" rel="noopener">Directions</a>
           <button class="btn" data-act="more" aria-expanded="false">Details</button>
+          <button class="btn${saved ? " saved" : ""}" data-act="save">${saved ? "Saved ★" : "Save"}</button>
+          ${p.link || p.about || p.temple ? `<button class="btn" data-act="listen">Listen</button>` : ""}
           ${p.phone ? `<a class="btn" href="tel:${esc(p.phone.split(";")[0].replace(/\s/g, ""))}">Call</a>` : ""}
           <button class="btn" data-act="share">Share</button>
         </div>
@@ -604,7 +732,9 @@ function render(partial) {
       <div class="more" hidden>
         ${p.about ? `<p class="about">${esc(p.about)}</p>` : ""}
         ${p.addr ? `<p>${esc(p.addr)}</p>` : ""}
-        <p>${p.hours ? "Hours: " + esc(p.hours) : "Opening hours not listed."}</p>
+        <p>${p.hours ? (p.temple ? "Darshan: " : "Hours: ") + esc(fmtHours(p.hours)) : "Opening hours not listed."}</p>
+        ${p.temple && p.temple.aarti ? `<p>Aarti: ${esc(p.temple.aarti)}</p>` : ""}
+        ${p.temple ? `<p>${esc(p.temple.note)}</p>` : ""}
         <p><a href="${gmaps}" target="_blank" rel="noopener">Ratings and reviews on Google Maps</a></p>
         ${p.web ? `<p><a href="${esc(p.web)}" target="_blank" rel="noopener">Website</a></p>` : ""}
         ${p.link ? `<p><a href="${esc(p.link)}" target="_blank" rel="noopener">Read more on Wikipedia</a></p>` : ""}
@@ -615,6 +745,11 @@ function render(partial) {
       e.currentTarget.textContent = more.hidden ? "Details" : "Hide details";
     };
     li.querySelector("[data-act=share]").onclick = () => share(p, dir);
+    li.querySelector("[data-act=save]").onclick = e => {
+      const on = toggleSave(p);
+      e.currentTarget.textContent = on ? "Saved ★" : "Save"; e.currentTarget.classList.toggle("saved", on);
+    };
+    li.querySelector("[data-act=listen]")?.addEventListener("click", e => speakPlace(p, e.currentTarget));
     li.querySelector("h3").onclick = () => select(i, false);
     ul.appendChild(li);
   });
@@ -640,6 +775,507 @@ async function share(p, link) {
   window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
 }
 
+/* ===== Free time planner ===== */
+const P = { hours: 3, meal: true, veg: false, layer: null, open: false, text: "" };
+
+function visitMin(p) {
+  const k = (p.kind + " " + (p.cats || "") + " " + p.name).toLowerCase();
+  if (/theme|amusement|water ?park|zoo/.test(k)) return 120;
+  if (/museum|palace|fort|gallery|science|planetarium/.test(k)) return 60;
+  if (/beach|national.?park|sanctuary|nature.?reserve/.test(k)) return 60;
+  if (/temple|mandir|church|mosque|masjid|dargah|gurudwara|worship|religious|shrine|jinalay|derasar/.test(k)) return 40;
+  if (/park|garden|lake|talav|lake|baug|bagh|udyan/.test(k)) return 40;
+  if (/market|bazaar|mall/.test(k)) return 45;
+  if (/viewpoint|monument|memorial|statue|tower|gate|clock/.test(k)) return 20;
+  return 30;
+}
+function driveMin(a, b) {
+  const road = km(a, b) * 1.35;
+  const speed = road < 5 ? 20 : road < 20 ? 30 : 45;
+  return Math.max(5, Math.round((road / speed * 60 + 5) / 5) * 5);
+}
+const clock = d => d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+const addMin = (d, m) => new Date(d.getTime() + m * 60000);
+const fmtDur = m => m < 60 ? m + " min" : Math.floor(m / 60) + " hr" + (m % 60 ? " " + (m % 60) + " min" : "");
+
+async function fetchCat(key, center, radius) {
+  const cat = CATEGORIES[key];
+  const jobs = [];
+  if (cat.wiki) jobs.push(wikiNearby(center, radius).catch(() => []));
+  jobs.push((async () => {
+    if (hasKey()) { try { return await geoapify(cat, center, radius); } catch (e) {} }
+    const A = `(around:${radius},${center.lat},${center.lng})`;
+    const q = `[out:json][timeout:15];(${cat.q.replaceAll("{A}", A)});out center tags 150;`;
+    return (await overpass(q)).map(fromOSM).filter(p => p.lat != null);
+  })().catch(() => []).then(l => l.length ? l : (offlineFor(key, center, radius) || [])));
+  const res = await Promise.all(jobs);
+  return key === "see" ? withTemples(merge(res[0], res[1]), center, radius) : res[0];
+}
+
+function togglePlan(open) {
+  P.open = open;
+  $("plan-open").setAttribute("aria-pressed", open);
+  $("plan").hidden = !open;
+  document.querySelector(".controls").hidden = open;
+  document.querySelector("main").hidden = open;
+  if (open) {
+    S.markers.forEach(m => m.remove());
+  } else {
+    if (P.layer) { P.layer.remove(); P.layer = null; }
+    render();
+  }
+}
+
+function buildPlanControls() {
+  $("plan-open").onclick = () => togglePlan(!P.open);
+  $("p-close").onclick = () => togglePlan(false);
+  $("hrs").querySelectorAll("button").forEach(b => b.onclick = () => {
+    P.hours = +b.dataset.h;
+    $("hrs").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  });
+  $("p-meal").onclick = e => { P.meal = !P.meal; e.currentTarget.setAttribute("aria-pressed", P.meal); };
+  $("p-veg").onclick = e => { P.veg = !P.veg; e.currentTarget.setAttribute("aria-pressed", P.veg); };
+  $("p-go").onclick = makePlan;
+  $("p-again").onclick = () => { $("plan-list").innerHTML = ""; $("plan-actions").hidden = true; window.scrollTo({ top: 0, behavior: "smooth" }); };
+  $("p-share").onclick = async () => {
+    if (navigator.share) { try { await navigator.share({ title: "My Vazhikaatti plan", text: P.text }); return; } catch (e) { if (e.name === "AbortError") return; } }
+    window.open("https://wa.me/?text=" + encodeURIComponent(P.text), "_blank");
+  };
+}
+
+async function makePlan() {
+  const start = S.me || S.center || CONFIG.START;
+  const budget = P.hours * 60;
+  const radius = { 1: 5000, 2: 10000, 3: 15000, 4: 20000, 6: 25000 }[P.hours];
+  const list = $("plan-list");
+  list.innerHTML = ""; $("plan-actions").hidden = true;
+  $("p-go").disabled = true;
+  $("status").innerHTML = `<span class="spin"></span>Finding the best places for ${fmtDur(budget)}…`;
+
+  const [see, todo, food] = await Promise.all([
+    fetchCat("see", start, radius), fetchCat("do", start, Math.min(radius, 15000)),
+    P.meal && budget >= 120 ? fetchCat("food", start, radius) : Promise.resolve([])
+  ]);
+  $("p-go").disabled = false;
+
+  // candidates: named sights, best known first, no near-duplicates
+  const seen = [];
+  const cands = [...see, ...todo].filter(p => p.name && p.lat != null)
+    .map(p => ({ ...p, value: (p.score || 0) + (p.link ? 2 : 0) + (p.photo ? 1 : 0) + 1 }))
+    .sort((a, b) => b.value - a.value)
+    .filter(p => { if (seen.some(q => km(q, p) < 0.15)) return false; seen.push(p); return true; })
+    .slice(0, 40);
+
+  const now = new Date();
+  let cur = start, used = 0, mealDone = !(P.meal && budget >= 120 && food.length);
+  const stops = [];
+  const left = new Set(cands);
+
+  const tryMeal = () => {
+    const opts = food.filter(f => !P.veg || dietOf(f) === "veg")
+      .map(f => ({ f, t: driveMin(cur, f) }))
+      .filter(o => used + o.t + 45 <= budget && isOpenNow(o.f.hours, addMin(now, used + o.t)) !== false)
+      .sort((a, b) => (a.t - b.t) || ((b.f.score || 0) - (a.f.score || 0)));
+    if (!opts.length) return false;
+    const { f, t } = opts[0];
+    stops.push({ p: f, drive: t, stay: 45, at: addMin(now, used + t), meal: true });
+    used += t + 45; cur = f; mealDone = true;
+    return true;
+  };
+
+  while (true) {
+    if (!mealDone && used >= budget * 0.4) tryMeal() ? null : (mealDone = true);
+    let best = null, bestScore = 0;
+    for (const c of left) {
+      const t = driveMin(cur, c), v = visitMin(c);
+      if (used + t + v > budget) continue;
+      if (isOpenNow(c.hours, addMin(now, used + t)) === false) continue;
+      const sc = c.value / (t + v);
+      if (sc > bestScore) { bestScore = sc; best = { c, t, v }; }
+    }
+    if (!best) break;
+    left.delete(best.c);
+    stops.push({ p: best.c, drive: best.t, stay: best.v, at: addMin(now, used + best.t) });
+    used += best.t + best.v; cur = best.c;
+  }
+  if (!mealDone) tryMeal();
+
+  if (!stops.length) {
+    setStatus("No plan possible");
+    list.innerHTML = `<li class="stop end"><time></time><div><h3>Nothing fits in ${fmtDur(budget)}</h3><span class="drive">Try more time, or search from a busier area.</span></div></li>`;
+    return;
+  }
+  showPlan(start, stops, used, now);
+}
+
+function showPlan(start, stops, used, now) {
+  setStatus(`${stops.length} stops in ${fmtDur(used)}`);
+  const list = $("plan-list");
+  P.text = `My Vazhikaatti plan (${fmtDur(used)}):\n`;
+  stops.forEach((s, i) => {
+    const p = s.p, leave = addMin(s.at, s.stay);
+    const dir = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving`;
+    const li = document.createElement("li");
+    li.className = "stop" + (s.meal ? " meal" : "");
+    li.innerHTML = `<time>${clock(s.at)}</time><div>
+      <h3>${i + 1}. ${esc(p.name)}</h3>
+      <p class="kind">${esc(p.kind || "")}${p.kind ? ", " : ""}about ${fmtDur(s.stay)} here, leave by ${clock(leave)}</p>
+      <span class="drive">${fmtDur(s.drive)} drive, ${fmtKm(km(i ? stops[i - 1].p : start, p))}</span>
+      <div class="actions"><a class="btn" href="${dir}" target="_blank" rel="noopener">Directions</a></div></div>`;
+    list.appendChild(li);
+    P.text += `\n${clock(s.at)}  ${i + 1}. ${p.name}${s.meal ? " (meal)" : ""}, ${fmtDur(s.stay)}`;
+  });
+  const end = document.createElement("li");
+  end.className = "stop end";
+  end.innerHTML = `<time>${clock(addMin(now, used))}</time><div><h3>Plan ends</h3><span class="drive">Drive and visit times are estimates. Check timings before you go.</span></div>`;
+  list.appendChild(end);
+
+  // map: numbered stops joined by a line
+  if (P.layer) P.layer.remove();
+  P.layer = L.layerGroup().addTo(S.map);
+  const pts = [[start.lat, start.lng], ...stops.map(s => [s.p.lat, s.p.lng])];
+  L.polyline(pts, { color: "#E8C75A", weight: 4, opacity: .9, dashArray: "6 6" }).addTo(P.layer);
+  stops.forEach((s, i) => L.marker([s.p.lat, s.p.lng], { title: s.p.name,
+    icon: L.divIcon({ className: "", html: `<div class="pin">${i + 1}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }) }).addTo(P.layer));
+  S.map.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
+
+  const way = stops.slice(0, -1).map(s => `${s.p.lat},${s.p.lng}`).join("|");
+  const last = stops[stops.length - 1].p;
+  $("p-route").href = `https://www.google.com/maps/dir/?api=1&origin=${start.lat},${start.lng}&destination=${last.lat},${last.lng}` +
+    (way ? `&waypoints=${encodeURIComponent(way)}` : "") + "&travelmode=driving";
+  P.text += `\n\nRoute: ${$("p-route").href}`;
+  $("p-save").textContent = "Save plan";
+  $("plan-actions").hidden = false;
+}
+
+/* ===== Small helpers ===== */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("vk:" + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("vk:" + k, JSON.stringify(v)); return true; } catch { return false; } }
+};
+const dirUrl = p => `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving`;
+const cleanTel = s => String(s).split(";")[0].replace(/\s/g, "");
+Object.assign(S, { ahead: false, heading: null, lastFix: null, lang: store.get("lang", "en"), autoGuide: false, spoken: new Set() });
+
+function openSheet(title, html) {
+  $("sheet-title").textContent = title; $("sheet-body").innerHTML = html;
+  $("sheet-back").hidden = false; $("sheet-x").focus();
+}
+function closeSheet() { $("sheet-back").hidden = true; }
+
+/* ===== Temple timings: hand-checked from temple and travel sites, Nov 2026. They change on festivals. ===== */
+const TEMPLES = [
+  { name: "Dwarkadhish Temple", match: /dwarka?dh?ee?sh|jagat mandir/i, lat: 22.2378, lng: 68.9676,
+    hours: "Mo-Su 06:30-13:00,17:00-21:30", aarti: "Mangla 6:30 AM, Shringar 10:30 AM, Sandhya 7:30 PM, Shayan 8:30 PM",
+    note: "Closed for darshan about 1 PM to 5 PM. Short closures for bhog during open hours." },
+  { name: "Somnath Temple", match: /somnath/i, lat: 20.8880, lng: 70.4013,
+    hours: "Mo-Su 06:00-22:00", aarti: "7:00 AM, 12:00 noon, 7:00 PM",
+    note: "Sound and light show in the evening (about 7:45 to 8 PM), not in monsoon. Phones, cameras and leather items are not allowed inside." },
+  { name: "Nageshwar Jyotirlinga", match: /nageshwar|nageshvar|nagesh/i, lat: 22.3359, lng: 69.0871,
+    hours: "Mo-Su 06:00-12:30,17:00-21:30", aarti: "6:00 AM, 12:00 noon, 7:00 PM, 9:00 PM",
+    note: "Some sources say it stays open all day. Plan around the afternoon break to be safe." },
+  { name: "Bet Dwarka Temple", match: /bet dwarka|beyt|shankhodh/i, lat: 22.4715, lng: 69.1245,
+    hours: "", aarti: "",
+    note: "Timings differ between sources, so go in the morning. Reachable by road over the Sudarshan Setu bridge." }
+];
+function nextChange(hours, now = new Date()) {
+  const m = hours.match(/(\d{1,2}:\d{2}-\d{1,2}:\d{2}(?:,\d{1,2}:\d{2}-\d{1,2}:\d{2})*)/);
+  if (!m) return null;
+  const mins = now.getHours() * 60 + now.getMinutes();
+  const rs = m[1].split(",").map(r => r.split("-").map(t => { const [h, mm] = t.split(":"); return +h * 60 + +mm; }));
+  const at = x => clock(new Date(2000, 0, 1, Math.floor(x / 60), x % 60));
+  for (const [a, b] of rs) if (mins >= a && mins < b) return { open: true, text: `Darshan open, closes ${at(b)}` };
+  const nx = rs.find(([a]) => a > mins);
+  return { open: false, text: nx ? `Closed now, opens ${at(nx[0])}` : `Closed now, opens ${at(rs[0][0])} tomorrow` };
+}
+function fmtHours(h) {
+  const m = String(h || "").match(/^(?:Mo-Su\s*)?(\d{1,2}:\d{2}-\d{1,2}:\d{2}(?:,\s*\d{1,2}:\d{2}-\d{1,2}:\d{2})*)$/);
+  if (!m) return h;
+  return m[1].split(",").map(r => r.trim().split("-").map(t => { const [a, b] = t.split(":"); return clock(new Date(2000, 0, 1, +a, +b)); }).join(" to ")).join(", ");
+}
+function withTemples(list, center, radius) {
+  const out = list.slice();
+  for (const t of TEMPLES) {
+    if (km(center, t) > radius / 1000 + 0.5) continue;
+    const hit = out.find(p => km(p, t) < 3 && t.match.test(p.name)) || out.find(p => km(p, t) < 0.3);
+    if (hit) { Object.assign(hit, { temple: t, hours: t.hours || hit.hours, score: (hit.score || 0) + 4 }); continue; }
+    out.push({ id: "t" + t.name, name: t.name, lat: t.lat, lng: t.lng, kind: "Hindu temple", tags: {}, score: 9,
+      hours: t.hours, temple: t, about: "", photo: "", addr: "", phone: "", web: "" });
+  }
+  return out;
+}
+function renderTemples() {
+  const box = $("temples"), c = S.me || S.center;
+  if (S.cat !== "see" || !c) { box.innerHTML = ""; return; }
+  const near = TEMPLES.map(t => ({ t, d: km(c, t) })).filter(x => x.d <= 60).sort((a, b) => a.d - b.d);
+  box.innerHTML = !near.length ? "" : `<section class="tbox"><h2>Darshan timings near you</h2>` + near.map(({ t, d }) => {
+    const nc = t.hours ? nextChange(t.hours) : null;
+    return `<div class="tcard"><h3>${esc(t.name)} <span class="note">${fmtKm(d)} away</span></h3>
+      ${nc ? `<p class="${nc.open ? "open" : "shut"}">${esc(nc.text)}</p>` : ""}
+      ${t.hours ? `<p>Darshan: ${esc(fmtHours(t.hours))}</p>` : ""}
+      ${t.aarti ? `<p>Aarti: ${esc(t.aarti)}</p>` : ""}
+      <p class="note">${esc(t.note)}</p></div>`;
+  }).join("") + `<p class="note">Timings can change on festivals and special days, so confirm locally.</p></section>`;
+}
+
+/* ===== Weather, sunrise and sunset (Open-Meteo, free) ===== */
+const WX = { 0: "Clear sky", 1: "Mostly clear", 2: "Partly cloudy", 3: "Cloudy", 45: "Fog", 48: "Fog", 51: "Light drizzle", 53: "Drizzle",
+  55: "Heavy drizzle", 61: "Light rain", 63: "Rain", 65: "Heavy rain", 80: "Rain showers", 81: "Rain showers", 82: "Heavy showers",
+  95: "Thunderstorm", 96: "Thunderstorm", 99: "Thunderstorm" };
+let wxAt = null;
+async function loadWeather(c) {
+  if (wxAt && km(wxAt.c, c) < 10 && Date.now() - wxAt.t < 30 * 60000) return;
+  wxAt = { c, t: Date.now() };
+  const [signal, done] = withTimeout(8000);
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat.toFixed(3)}&longitude=${c.lng.toFixed(3)}` +
+      `&current=temperature_2m,weather_code&daily=sunrise,sunset&timezone=auto&forecast_days=1`, { signal });
+    const j = await r.json();
+    const t = x => x ? clock(new Date(x)) : "";
+    $("wx").innerHTML = `<span>${Math.round(j.current.temperature_2m)}°C, ${esc(WX[j.current.weather_code] || "")}</span>` +
+      `<span>Sunrise ${t(j.daily.sunrise[0])}</span><span>Sunset ${t(j.daily.sunset[0])}</span>`;
+    $("wx").hidden = false;
+  } catch { wxAt = null; } finally { done(); }
+}
+
+/* ===== Ahead of me ===== */
+function bearing(a, b) {
+  const r = x => x * Math.PI / 180;
+  const y = Math.sin(r(b.lng - a.lng)) * Math.cos(r(b.lat));
+  const x = Math.cos(r(a.lat)) * Math.sin(r(b.lat)) - Math.sin(r(a.lat)) * Math.cos(r(b.lat)) * Math.cos(r(b.lng - a.lng));
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+function destPoint(a, brg, dKm) {
+  const r = x => x * Math.PI / 180, deg = x => x * 180 / Math.PI, dr = dKm / 6371, th = r(brg), p1 = r(a.lat), l1 = r(a.lng);
+  const p2 = Math.asin(Math.sin(p1) * Math.cos(dr) + Math.cos(p1) * Math.sin(dr) * Math.cos(th));
+  const l2 = l1 + Math.atan2(Math.sin(th) * Math.sin(dr) * Math.cos(p1), Math.cos(dr) - Math.sin(p1) * Math.sin(p2));
+  return { lat: deg(p2), lng: deg(l2) };
+}
+const DIRS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
+const dirName = b => DIRS[Math.round(b / 45) % 8];
+function searchCenter() {
+  if (S.ahead && S.heading != null && S.me) return destPoint(S.me, S.heading, S.radius / 1000);
+  return S.me || S.center;
+}
+
+/* ===== Saved places and plans ===== */
+const savedList = () => store.get("saved", []);
+const isSaved = id => savedList().some(s => s.id === id);
+function toggleSave(p) {
+  let l = savedList();
+  if (l.some(s => s.id === p.id)) l = l.filter(s => s.id !== p.id);
+  else l.unshift({ id: p.id, name: p.name, kind: p.kind, lat: p.lat, lng: p.lng, note: "", at: Date.now() });
+  if (!store.set("saved", l)) setStatus("Couldn't save on this phone");
+  return l.some(s => s.id === p.id);
+}
+function openSaved() {
+  const l = savedList(), plans = store.get("plans", []);
+  let html = l.length ? "" : `<p class="note">Nothing saved yet. Tap Save on any place to keep it here.</p>`;
+  html += `<ul>` + l.map((s, i) => `<li><strong>${esc(s.name)}</strong> <span class="note">${esc(s.kind || "")}${S.me ? ", " + fmtKm(km(S.me, s)) + " away" : ""}</span>
+    <textarea data-i="${i}" placeholder="Add a note, for example: try the thali here">${esc(s.note)}</textarea>
+    <div class="actions"><a class="btn go" target="_blank" rel="noopener" href="${dirUrl(s)}">Directions</a><button class="btn" data-del="${i}">Remove</button></div></li>`).join("") + `</ul>`;
+  if (l.length) html += `<button class="btn" id="saved-share">Share this list</button>`;
+  if (plans.length) html += `<h2>Saved plans</h2><ul>` + plans.map((pl, i) =>
+    `<li><strong>${esc(pl.title)}</strong><pre>${esc(pl.text)}</pre><button class="btn" data-pdel="${i}">Remove</button></li>`).join("") + `</ul>`;
+  openSheet("Saved", html);
+  const body = $("sheet-body");
+  body.querySelectorAll("textarea").forEach(t => t.onchange = () => { const x = savedList(); x[+t.dataset.i].note = t.value; store.set("saved", x); });
+  body.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const x = savedList(); x.splice(+b.dataset.del, 1); store.set("saved", x); openSaved(); render(); });
+  body.querySelectorAll("[data-pdel]").forEach(b => b.onclick = () => { const x = store.get("plans", []); x.splice(+b.dataset.pdel, 1); store.set("plans", x); openSaved(); });
+  $("saved-share")?.addEventListener("click", () => {
+    const text = "My saved places:\n" + savedList().map(s => `\n${s.name}${s.note ? " (" + s.note + ")" : ""}\n${dirUrl(s)}`).join("\n");
+    window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+  });
+}
+
+/* ===== SOS ===== */
+async function geoCats(cats, c, radius, limit = 40) {
+  const u = `https://api.geoapify.com/v2/places?categories=${cats}&filter=circle:${c.lng},${c.lat},${radius}` +
+    `&bias=proximity:${c.lng},${c.lat}&limit=${limit}&lang=en&apiKey=${encodeURIComponent(CONFIG.GEOAPIFY_KEY)}`;
+  const [signal, done] = withTimeout(12000);
+  try {
+    const r = await fetch(u, { signal });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return ((await r.json()).features || []).map(fromGeo).filter(p => p.lat != null).map(p => (p.name ||= p.kind, p));
+  } finally { done(); }
+}
+function openSOS() {
+  const me = S.me;
+  const loc = me ? `https://www.google.com/maps?q=${me.lat.toFixed(5)},${me.lng.toFixed(5)}` : "";
+  openSheet("Emergency help", `
+    <a class="btn red big" href="tel:112">Call 112 (all emergencies)</a>
+    <a class="btn red big" href="tel:108">Call 108 (ambulance)</a>
+    ${me ? `<a class="btn go big" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent("I need help. My location: " + loc)}">Share my location on WhatsApp</a>`
+         : `<p class="note">Your location isn't known yet, so it can't be shared. Allow location for this site.</p>`}
+    <h2>Nearest hospitals</h2><ul id="sos-h"><li class="note">Looking…</li></ul>
+    <h2>Nearest police</h2><ul id="sos-p"><li class="note">Looking…</li></ul>`);
+  const fill = async (id, cats, re) => {
+    if (!me) { $(id).innerHTML = `<li class="note">Needs your location.</li>`; return; }
+    let l = [];
+    try { l = await geoCats(cats, me, 20000, 20); } catch {}
+    if (!l.length) l = (offlineFor("need", me, 10000) || []).filter(p => re.test(p.kind + " " + p.name));
+    l = l.map(p => ({ ...p, d: km(me, p) })).sort((a, b) => a.d - b.d).slice(0, 3);
+    if (!$(id)) return;
+    $(id).innerHTML = l.length ? l.map(p => `<li><strong>${esc(p.name)}</strong> <span class="note">${fmtKm(p.d)} away</span>
+      <div class="actions"><a class="btn go" target="_blank" rel="noopener" href="${dirUrl(p)}">Directions</a>
+      ${p.phone ? `<a class="btn" href="tel:${esc(cleanTel(p.phone))}">Call</a>` : ""}</div></li>`).join("")
+      : `<li class="note">None found nearby. Call 112.</li>`;
+  };
+  fill("sos-h", "healthcare.hospital", /hospital|clinic/i);
+  fill("sos-p", "service.police", /police/i);
+}
+
+/* ===== Offline ===== */
+const offlineData = () => store.get("offline", null);
+function offlineFor(key, center, radius) {
+  const o = offlineData();
+  if (!o || !center || km(o.c, center) > o.r / 1000) return null;
+  return (o.data[key] || []).filter(p => km(center, p) <= radius / 1000 + 0.2);
+}
+const slim = p => ({ id: p.id, name: p.name, lat: p.lat, lng: p.lng, kind: p.kind, score: p.score, addr: p.addr, hours: p.temple ? "" : p.hours,
+  phone: p.phone, web: p.web, about: p.about, link: p.link, cats: p.cats, photo: "",
+  tags: { cuisine: p.tags?.cuisine, "diet:vegetarian": p.tags?.["diet:vegetarian"], "addr:city": p.tags?.["addr:city"] } });
+function openOffline() {
+  const o = offlineData();
+  const count = o ? Object.values(o.data).reduce((a, l) => a + l.length, 0) : 0;
+  openSheet("Offline mode", `
+    <p class="note">Save everything within 10 km of where you are now: attractions, things to do, food, stays, fuel, ATMs and hospitals. Do this before driving into areas with poor signal.</p>
+    <p class="note">The app itself also opens without signal once you've used it, and map areas you've already viewed stay available.</p>
+    <button class="btn go big" id="off-go">Save this area</button>
+    <p id="off-status" class="note">${o ? `Last saved ${esc(new Date(o.t).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }))}, ${count} places.` : "Nothing saved yet."}</p>
+    ${o ? `<button class="btn" id="off-clear">Delete saved area</button>` : ""}`);
+  $("off-go").onclick = saveOffline;
+  $("off-clear")?.addEventListener("click", () => { try { localStorage.removeItem("vk:offline"); } catch {} openOffline(); });
+}
+async function saveOffline() {
+  const c = S.me || S.center;
+  if (!c) return ($("off-status").textContent = "Your location isn't known yet.");
+  if (!navigator.onLine) return ($("off-status").textContent = "You're offline now. Save the area while you have signal.");
+  $("off-go").disabled = true;
+  const data = {}; let n = 0;
+  for (const key of Object.keys(CATEGORIES)) {
+    $("off-status").textContent = `Saving ${CATEGORIES[key].label.toLowerCase()}…`;
+    try { data[key] = (await fetchCat(key, c, 10000)).map(slim); } catch { data[key] = []; }
+    n += data[key].length;
+  }
+  const ok = store.set("offline", { c, r: 10000, t: Date.now(), data });
+  if ($("off-status")) $("off-status").textContent = ok ? `Saved ${n} places within 10 km. They'll show when you have no signal.` : "Couldn't save. This phone's storage for the app is full.";
+  if ($("off-go")) $("off-go").disabled = false;
+}
+
+/* ===== Audio guide ===== */
+const LANGS = { en: ["English", "en-IN"], hi: ["हिंदी", "hi-IN"], gu: ["ગુજરાતી", "gu-IN"], ml: ["മലയാളം", "ml-IN"] };
+async function wikiExtract(lang, title) {
+  const u = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&exintro=1&explaintext=1&exsentences=6&redirects=1&titles=${encodeURIComponent(title)}`;
+  const j = await (await fetch(u)).json();
+  return Object.values(j.query?.pages || {})[0]?.extract || "";
+}
+async function guideText(p, lang) {
+  if (p.link) {
+    if (lang !== "en") {
+      try {
+        const u = `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=langlinks&lllang=${lang}&redirects=1&titles=${encodeURIComponent(p.name)}`;
+        const j = await (await fetch(u)).json();
+        const t = Object.values(j.query?.pages || {})[0]?.langlinks?.[0]?.["*"];
+        if (t) { const x = await wikiExtract(lang, t); if (x) return { text: x, lang }; }
+      } catch {}
+    }
+    try { const x = await wikiExtract("en", p.name); if (x) return { text: x, lang: "en" }; } catch {}
+  }
+  const t = p.temple;
+  return { text: [p.name + ".", p.about || "", t ? `Darshan: ${fmtHours(t.hours) || "timings vary"}. ${t.aarti ? "Aarti: " + t.aarti + "." : ""} ${t.note}` : ""].join(" "), lang: "en" };
+}
+function voiceFor(lang) {
+  const v = speechSynthesis.getVoices(), want = LANGS[lang][1].toLowerCase();
+  return v.find(x => x.lang.replace("_", "-").toLowerCase() === want) || v.find(x => x.lang.toLowerCase().startsWith(lang));
+}
+let speakBtn = null;
+function stopSpeaking() {
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  if (speakBtn) { speakBtn.textContent = "Listen"; speakBtn = null; }
+}
+async function speakPlace(p, btn) {
+  if (!("speechSynthesis" in window)) return setStatus("This browser can't read aloud");
+  const wasThis = btn && btn === speakBtn;
+  stopSpeaking();
+  if (wasThis) return;
+  if (btn) { btn.textContent = "Loading…"; speakBtn = btn; }
+  let g = await guideText(p, S.lang);
+  let note = g.lang !== S.lang ? `No ${LANGS[S.lang][0]} story for this place, reading in English` : "";
+  let voice = voiceFor(g.lang);
+  if (!voice && g.lang !== "en") {
+    note = `No ${LANGS[g.lang][0]} voice on this phone, reading in English. You can add it in your phone's text-to-speech settings.`;
+    g = await guideText(p, "en"); voice = voiceFor("en");
+  }
+  if (btn && speakBtn !== btn) return;
+  const u = new SpeechSynthesisUtterance(g.text.slice(0, 2000));
+  u.lang = LANGS[g.lang][1]; if (voice) u.voice = voice; u.rate = 0.95;
+  u.onend = u.onerror = () => { if (speakBtn === btn && btn) { btn.textContent = "Listen"; speakBtn = null; } };
+  speechSynthesis.speak(u);
+  if (btn) btn.textContent = "Stop";
+  if (note) setStatus(note);
+}
+function autoGuide(me) {
+  if (!S.autoGuide || !("speechSynthesis" in window) || speechSynthesis.speaking) return;
+  const p = S.places.find(x => (x.link || x.temple) && !S.spoken.has(x.id) && km(me, x) < 0.25);
+  if (!p) return;
+  S.spoken.add(p.id);
+  setStatus(`Now playing: ${p.name}`);
+  speakPlace(p, null);
+}
+function openAudio() {
+  const has = "speechSynthesis" in window;
+  openSheet("Audio guide", `
+    <p class="note">Tap Listen on any attraction to hear its story. Stories come from Wikipedia, and your phone reads them aloud.</p>
+    <div class="row" role="group" aria-label="Language">${Object.entries(LANGS).map(([k, v]) =>
+      `<button class="opt" data-l="${k}" lang="${k}" aria-pressed="${S.lang === k}">${v[0]}</button>`).join("")}</div>
+    <p><button class="opt" id="auto-g" aria-pressed="${S.autoGuide}">Play automatically when I reach a place</button></p>
+    <p class="note" id="voice-note"></p>
+    <button class="btn" id="g-stop">Stop speaking</button>
+    ${has ? "" : `<p class="shut">This browser can't read aloud. Try Chrome.</p>`}`);
+  const note = () => {
+    if (!has) return;
+    $("voice-note").textContent = S.lang !== "en" && !voiceFor(S.lang)
+      ? `This phone doesn't seem to have a ${LANGS[S.lang][0]} voice yet. Add it in your phone's text-to-speech settings, or stories will be read in English.` : "";
+  };
+  $("sheet-body").querySelectorAll("[data-l]").forEach(b => b.onclick = () => {
+    S.lang = b.dataset.l; store.set("lang", S.lang);
+    $("sheet-body").querySelectorAll("[data-l]").forEach(x => x.setAttribute("aria-pressed", x === b)); note();
+  });
+  $("auto-g").onclick = e => { S.autoGuide = !S.autoGuide; e.currentTarget.setAttribute("aria-pressed", S.autoGuide); if (S.autoGuide && S.me) autoGuide(S.me); };
+  $("g-stop").onclick = stopSpeaking;
+  note();
+}
+
+/* ===== Wire up tools ===== */
+function buildTools() {
+  $("t-ahead").onclick = e => {
+    S.ahead = !S.ahead; e.currentTarget.setAttribute("aria-pressed", S.ahead);
+    if (!S.me) return setStatus("Waiting for your location…");
+    if (S.ahead && S.heading == null) return setStatus("Start driving. Places ahead will show once your direction is known.");
+    search(searchCenter());
+  };
+  $("t-saved").onclick = openSaved;
+  $("t-sos").onclick = openSOS;
+  $("t-offline").onclick = openOffline;
+  $("t-audio").onclick = openAudio;
+  $("sheet-x").onclick = closeSheet;
+  $("sheet-back").onclick = e => { if (e.target === e.currentTarget) closeSheet(); };
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("sheet-back").hidden) closeSheet(); });
+  $("p-save").onclick = () => {
+    const x = store.get("plans", []);
+    x.unshift({ title: "Plan, " + new Date().toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }), text: P.text });
+    store.set("plans", x.slice(0, 20));
+    $("p-save").textContent = "Saved ★";
+  };
+  window.addEventListener("offline", () => setStatus("You're offline. Saved places will show where available."));
+  window.addEventListener("online", () => setStatus("Back online"));
+  if ("speechSynthesis" in window) { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); }
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+
+buildTools();
+buildPlanControls();
 init();
 </script>
 </body>
