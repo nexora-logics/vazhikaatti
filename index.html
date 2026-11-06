@@ -170,8 +170,9 @@
       <option value="best">Best known first</option>
       <option value="near">Nearest first</option>
     </select>
-    <button class="opt" id="f-open" aria-pressed="false">Open now</button>
+    <button class="opt" id="f-open" aria-pressed="false">Hide closed</button>
     <button class="opt" id="f-veg" aria-pressed="false" hidden>Veg</button>
+    <button class="opt" id="f-nonveg" aria-pressed="false" hidden>Non-veg</button>
     <button class="opt" id="f-auto" aria-pressed="true">Update as I travel</button>
   </div>
 </div>
@@ -220,7 +221,7 @@ const CATEGORIES = {
 };
 
 /* ===== State ===== */
-const S = { cat: "see", radius: 5000, rank: "best", openNow: false, veg: false, auto: true,
+const S = { cat: "see", radius: 5000, rank: "best", openNow: false, diet: "", auto: true,
   me: null, center: null, places: [], markers: [], meMarker: null, map: null, busy: false, active: -1, cache: new Map(), req: 0 };
 
 const $ = id => document.getElementById(id);
@@ -296,7 +297,7 @@ function buildControls() {
     b.onclick = () => {
       S.cat = key;
       cats.querySelectorAll(".cat").forEach(x => x.setAttribute("aria-pressed", x.dataset.key === key));
-      $("f-veg").hidden = key !== "food";
+      $("f-veg").hidden = $("f-nonveg").hidden = key !== "food";
       search(S.center || S.me);
     };
     cats.appendChild(b);
@@ -307,7 +308,14 @@ function buildControls() {
     S[key] = !S[key]; e.currentTarget.setAttribute("aria-pressed", S[key]);
     if (key !== "auto") render();
   };
-  toggle("f-open", "openNow"); toggle("f-veg", "veg"); toggle("f-auto", "auto");
+  toggle("f-open", "openNow"); toggle("f-auto", "auto");
+  const diet = (id, val) => $(id).onclick = () => {
+    S.diet = S.diet === val ? "" : val;
+    $("f-veg").setAttribute("aria-pressed", S.diet === "veg");
+    $("f-nonveg").setAttribute("aria-pressed", S.diet === "nonveg");
+    render();
+  };
+  diet("f-veg", "veg"); diet("f-nonveg", "nonveg");
   $("here").onclick = () => { const c = S.map.getCenter(); search({ lat: c.lat, lng: c.lng }); };
   $("locate").onclick = () => {
     if (!S.me) return startGPS();
@@ -411,7 +419,7 @@ async function wikiNearby(c, radius) {
       about: p.extract || "", photo: p.thumbnail?.source || "",
       link: `https://${CONFIG.WIKI_LANG}.wikipedia.org/?curid=${p.pageid}`, score: 5, tags: {}
     })).filter(p => !/^(village|town|city|district|taluka|census town|human settlement|tehsil|neighbourhood|suburb)/i.test(p.kind) &&
-                    !/(constituency|railway station|school|college|university|company|ward)/i.test(p.kind + " " + p.name));
+                    !/(constituency|railway station|school|college|university|company|ward|riot|attack|bombing|massacre|election|earthquake|flood|disaster|incident|accident|crash|cricket|team|club|season)/i.test(p.kind + " " + p.name));
   } finally { done(); }
 }
 
@@ -439,10 +447,10 @@ function fromGeo(f) {
   const cats = p.categories || [];
   const specific = cats.filter(c => c.includes(".")).sort((a, b) => b.split(".").length - a.split(".").length)[0] || cats[0] || "";
   const kind = kindOf(t) || cap(specific.split(".").pop());
-  return { id: "g" + (p.place_id || p.lat + "," + p.lon), name: p.name || t["name:en"] || t.name, lat: p.lat, lng: p.lon,
+  return { cats: cats.join(","), id: "g" + (p.place_id || p.lat + "," + p.lon), name: p.name || t["name:en"] || t.name, lat: p.lat, lng: p.lon,
     kind, tags: t, score: scoreOf(t), addr: p.address_line2 || p.formatted || "",
-    hours: p.opening_hours || t.opening_hours || "", phone: p.contact?.phone || t.phone || t["contact:phone"] || "",
-    web: p.website || t.website || t["contact:website"] || "", about: t.description || "", photo: "" };
+    hours: String(p.opening_hours || t.opening_hours || ""), phone: String(p.contact?.phone || t.phone || t["contact:phone"] || ""),
+    web: String(p.website || t.website || t["contact:website"] || ""), about: String(t.description || ""), photo: "" };
 }
 
 function fromOSM(e) {
@@ -473,7 +481,7 @@ async function search(center) {
   $("status").innerHTML = `<span class="spin"></span>Looking for ${esc(cat.label.toLowerCase())}…`;
 
   let wiki = [], main = [], keyBad = false;
-  const show = () => { if (myReq === S.req) { S.places = merge(wiki, main); render(true); } };
+  const show = () => { if (myReq === S.req) { S.places = merge(wiki, main); try { render(true); } catch (e) { console.error(e); } } };
 
   const wikiJob = cat.wiki ? wikiNearby(center, S.radius).then(w => { wiki = w; show(); }).catch(() => {}) : Promise.resolve();
 
@@ -517,13 +525,23 @@ function merge(wiki, osm) {
 
 /* ===== Render ===== */
 const VEG = /veg|jain|thali|bhojan|shudh|pure|prasad|annapurna/i;
+const NONVEG_WORDS = /non[\s-]?veg|chicken|biryani|biriyani|kebab|kabab|mutton|fish|sea ?food|mughlai|tandoor|shawarma|egg|meat|bbq|barbe?cue|grill|kfc|mcdonald|burger king|wendy|subway|pizza hut|domino|arabian|mandi|al[\s-]?faham|hyderabadi|lucknowi|kerala|malabar|chinese/i;
+function dietOf(p) {
+  const t = p.tags || {}, v = t["diet:vegetarian"] || "";
+  if (v === "only" || t["diet:vegan"] === "only") return "veg";
+  if (/non[\s-]?veg/i.test(p.name)) return "nonveg";
+  if (t["diet:meat"] === "yes" || t["diet:non-vegetarian"] === "yes") return "nonveg";
+  if (/(chicken|kebab|barbecue|seafood|fish|steak|burger|wings)/.test((p.cats || "") + " " + (t.cuisine || ""))) return "nonveg";
+  if (NONVEG_WORDS.test(p.name + " " + (t.cuisine || ""))) return "nonveg";
+  if (VEG.test(p.name) || /vegetarian/.test(t.cuisine || "")) return "veg";
+  return "";
+}
 function visible() {
   const from = S.me || S.center;
   let items = S.places.map(p => ({ ...p, open: isOpenNow(p.hours), dist: from ? km(from, p) : 0 }))
     .filter(p => p.dist <= S.radius / 1000 + 0.2)
-    .filter(p => !S.openNow || p.open === true)
-    .filter(p => !S.veg || S.cat !== "food" || /^(only|yes)$/.test(p.tags["diet:vegetarian"] || "") ||
-      /vegetarian/.test(p.tags.cuisine || "") || (VEG.test(p.name) && !/non[\s-]?veg/i.test(p.name)));
+    .filter(p => !S.openNow || p.open !== false)
+    .filter(p => !S.diet || S.cat !== "food" || dietOf(p) === S.diet);
   items.sort(S.rank === "near" ? (a, b) => a.dist - b.dist : (a, b) => (b.score - a.score) || (a.dist - b.dist));
   return items.slice(0, 40);
 }
@@ -548,7 +566,7 @@ function render(partial) {
     if (partial) return;
     const bigger = S.radius < 25000;
     return showMsg(`No ${label} found here`,
-      S.places.length ? "Your filters hide everything. Turn some off to see more. Many places on OpenStreetMap don't list opening hours." :
+      S.places.length ? "Your filters hide everything. Turn Hide closed, Veg or Non-veg off to see more." :
       `Nothing listed within ${S.radius / 1000} km. Try a larger distance or another category.`,
       bigger && !S.places.length ? { label: "Search within 25 km", run: () => { S.radius = 25000; $("radius").value = "25000"; search(S.center); } } : null);
   }
@@ -563,7 +581,8 @@ function render(partial) {
     const img = p.photo ? `<img class="thumb" loading="lazy" alt="" src="${esc(p.photo)}">`
                         : `<div class="thumb" aria-hidden="true">${esc((p.name || "?")[0])}</div>`;
     const open = p.open === true ? `<span class="open">Open now</span>` : p.open === false ? `<span class="shut">Closed now</span>` : "";
-    const veg = p.tags["diet:vegetarian"] === "only" ? "<span>Pure veg</span>" : "";
+    const d = S.cat === "food" ? dietOf(p) : "";
+    const veg = d === "veg" ? `<span class="open">Veg</span>` : d === "nonveg" ? `<span class="shut">Non-veg</span>` : "";
     const dir = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving`;
     const city = p.tags["addr:city"] || "";
     const gmaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + (city ? ", " + city : ""))}`;
