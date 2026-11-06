@@ -179,36 +179,44 @@
 <main>
   <div id="msg" hidden></div>
   <ul id="list"></ul>
-  <p class="src">Place data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> and <a href="https://www.wikipedia.org" target="_blank" rel="noopener">Wikipedia</a>. Ratings and reviews open in Google Maps.</p>
+  <p class="src">Place data from <a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a>, <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> and <a href="https://www.wikipedia.org" target="_blank" rel="noopener">Wikipedia</a>. Ratings and reviews open in Google Maps.</p>
 </main>
 
 <script>
 /* ===== Settings ===== */
 const CONFIG = {
+  GEOAPIFY_KEY: "5d2ca95e620f4aa4b535ba2020aed912",
   AUTO_REFRESH_KM: 2,
   START: { lat: 22.3072, lng: 73.1812 },   // shown until GPS is found
   OVERPASS: ["https://overpass-api.de/api/interpreter",
              "https://overpass.kumi.systems/api/interpreter",
-             "https://overpass.private.coffee/api/interpreter"],
+             "https://maps.mail.ru/osm/tools/overpass/api/interpreter"],
   WIKI_LANG: "en"
 };
 
-/* OpenStreetMap queries per category ({A} = around filter) */
+/* geo = Geoapify categories (safe = fallback if a category is rejected); q = OpenStreetMap backup query */
 const CATEGORIES = {
-  see: { label: "Attractions", wiki: true, q: `
-    nwr[tourism~"^(attraction|museum|viewpoint|gallery|artwork)$"][name]{A};
-    nwr[historic~"^(monument|memorial|fort|castle|ruins|archaeological_site|palace|city_gate)$"][name]{A};
-    nwr[amenity=place_of_worship][name][~"^(wikipedia|wikidata|tourism)$"~"."]{A};` },
-  do:   { label: "Things to do", q: `
-    nwr[tourism~"^(theme_park|zoo|aquarium|picnic_site)$"][name]{A};
-    nwr[leisure~"^(park|water_park|nature_reserve|garden|amusement_arcade)$"][name]{A};
-    nwr[natural=beach][name]{A};
-    nwr[amenity~"^(cinema|theatre)$"][name]{A};
-    nwr[shop=mall][name]{A};` },
-  food: { label: "Food", q: `nwr[amenity~"^(restaurant|cafe|fast_food|food_court|ice_cream)$"][name]{A};` },
-  stay: { label: "Stay", q: `nwr[tourism~"^(hotel|guest_house|hostel|motel|resort)$"][name]{A};` },
-  need: { label: "Fuel, ATM & help", q: `
-    nwr[amenity~"^(fuel|atm|hospital|clinic|pharmacy|police|toilets|charging_station|bank)$"]{A};` }
+  see: { label: "Attractions", wiki: true,
+    geo: "tourism.attraction,tourism.sights,entertainment.museum,heritage",
+    safe: "tourism.attraction,tourism.sights",
+    q: `nwr[tourism~"^(attraction|museum|viewpoint|gallery)$"][name]{A};
+        nwr[historic~"^(monument|memorial|fort|castle|ruins|archaeological_site|palace)$"][name]{A};` },
+  do: { label: "Things to do",
+    geo: "entertainment,leisure.park,beach,national_park",
+    safe: "entertainment,leisure.park",
+    q: `nwr[tourism~"^(theme_park|zoo|aquarium)$"][name]{A};
+        nwr[leisure~"^(park|water_park|garden)$"][name]{A};
+        nwr[natural=beach][name]{A}; nwr[amenity=cinema][name]{A};` },
+  food: { label: "Food",
+    geo: "catering.restaurant,catering.cafe,catering.fast_food,catering.food_court,catering.ice_cream",
+    safe: "catering",
+    q: `nwr[amenity~"^(restaurant|cafe|fast_food|food_court)$"][name]{A};` },
+  stay: { label: "Stay", geo: "accommodation",
+    q: `nwr[tourism~"^(hotel|guest_house|hostel|motel|resort)$"][name]{A};` },
+  need: { label: "Fuel, ATM & help", unnamedOk: true,
+    geo: "service.vehicle.fuel,service.financial.atm,healthcare.hospital,healthcare.pharmacy,service.police,amenity.toilet,service.vehicle.charging_station",
+    safe: "service.vehicle.fuel,service.financial.atm,healthcare.hospital,healthcare.pharmacy",
+    q: `nwr[amenity~"^(fuel|atm|hospital|clinic|pharmacy|police|toilets)$"]{A};` }
 };
 
 /* ===== State ===== */
@@ -318,7 +326,7 @@ function init() {
   }).addTo(S.map);
   S.map.on("dragend", () => {
     const c = S.map.getCenter();
-    if (S.center && km({ lat: c.lat, lng: c.lng }, S.center) > 0.5) $("here").hidden = false;
+    if (!S.center || km({ lat: c.lat, lng: c.lng }, S.center) > 0.5) $("here").hidden = false;
   });
   startGPS();
 }
@@ -357,19 +365,35 @@ function onGeoErr(e) {
 }
 
 /* ===== Data sources ===== */
+function withTimeout(ms) { const c = new AbortController(); const t = setTimeout(() => c.abort(), ms); return [c.signal, () => clearTimeout(t)]; }
+
+async function geoapify(cat, c, radius) {
+  const get = async cats => {
+    const u = `https://api.geoapify.com/v2/places?categories=${cats}&filter=circle:${c.lng},${c.lat},${radius}` +
+      `&bias=proximity:${c.lng},${c.lat}&limit=80&lang=en&apiKey=${encodeURIComponent(CONFIG.GEOAPIFY_KEY)}`;
+    const [signal, done] = withTimeout(15000);
+    try { const r = await fetch(u, { signal }); if (r.status === 401 || r.status === 403) throw new Error("KEY"); return r; }
+    finally { done(); }
+  };
+  let r = await get(cat.geo);
+  if (r.status === 400 && cat.safe) r = await get(cat.safe);
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return ((await r.json()).features || []).map(fromGeo)
+    .filter(p => p.lat != null && (p.name || cat.unnamedOk))
+    .map(p => (p.name ||= p.kind, p));
+}
+
 async function overpass(query) {
-  let lastErr;
-  for (const url of CONFIG.OVERPASS) {
-    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
+  // ask all mirrors at once, use the first good answer
+  return await Promise.any(CONFIG.OVERPASS.map(async url => {
+    const [signal, done] = withTimeout(12000);
     try {
       const r = await fetch(url, { method: "POST", body: "data=" + encodeURIComponent(query),
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }, signal: ctl.signal });
-      clearTimeout(t);
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }, signal });
       if (!r.ok) throw new Error("HTTP " + r.status);
       return (await r.json()).elements || [];
-    } catch (e) { clearTimeout(t); lastErr = e; }
-  }
-  throw lastErr;
+    } finally { done(); }
+  }));
 }
 
 async function wikiNearby(c, radius) {
@@ -377,42 +401,63 @@ async function wikiNearby(c, radius) {
     `&generator=geosearch&ggscoord=${c.lat}|${c.lng}&ggsradius=${Math.min(radius, 10000)}&ggslimit=40` +
     `&prop=coordinates|pageimages|extracts|description&piprop=thumbnail&pithumbsize=240` +
     `&exintro=1&explaintext=1&exsentences=2&exlimit=max`;
-  const r = await fetch(u);
-  const pages = Object.values((await r.json()).query?.pages || {});
-  return pages.filter(p => p.coordinates).map(p => ({
-    id: "w" + p.pageid, name: p.title, lat: p.coordinates[0].lat, lng: p.coordinates[0].lon,
-    kind: p.description ? cap(p.description) : "Place of interest",
-    about: p.extract || "", photo: p.thumbnail?.source || "",
-    link: `https://${CONFIG.WIKI_LANG}.wikipedia.org/?curid=${p.pageid}`, score: 5, tags: {}
-  })).filter(p => !/^(village|town|city|district|taluka|census town|human settlement|tehsil)/i.test(p.kind) &&
-                  !/(constituency|railway station|school|college|university|company)/i.test(p.kind + " " + p.name));
+  const [signal, done] = withTimeout(10000);
+  try {
+    const r = await fetch(u, { signal });
+    const pages = Object.values((await r.json()).query?.pages || {});
+    return pages.filter(p => p.coordinates).map(p => ({
+      id: "w" + p.pageid, name: p.title, lat: p.coordinates[0].lat, lng: p.coordinates[0].lon,
+      kind: p.description ? cap(p.description) : "Place of interest",
+      about: p.extract || "", photo: p.thumbnail?.source || "",
+      link: `https://${CONFIG.WIKI_LANG}.wikipedia.org/?curid=${p.pageid}`, score: 5, tags: {}
+    })).filter(p => !/^(village|town|city|district|taluka|census town|human settlement|tehsil|neighbourhood|suburb)/i.test(p.kind) &&
+                    !/(constituency|railway station|school|college|university|company|ward)/i.test(p.kind + " " + p.name));
+  } finally { done(); }
 }
 
 function kindOf(t) {
   if (t.amenity === "place_of_worship") return t.religion === "hindu" ? "Hindu temple" : cap(t.religion || "") + " place of worship";
-  const base = cap(t.tourism || t.historic || t.leisure || t.amenity || t.natural || (t.shop && "Shopping mall") || "Place");
+  const v = t.tourism || t.historic || t.leisure || t.amenity || t.natural || (t.shop && cap(t.shop) + " shop");
+  if (!v) return "";
+  const base = cap(v);
   if (t.cuisine) return base + ", " + t.cuisine.split(";").map(cap).join(", ");
   return base;
+}
+
+function scoreOf(t) {
+  let s = 0;
+  if (t.wikipedia || t.wikidata) s += 3;
+  if (t.tourism) s += 1;
+  if (t.opening_hours) s += 1;
+  if (t.website || t["contact:website"]) s += 1;
+  if (t.cuisine) s += 1;
+  return s;
+}
+
+function fromGeo(f) {
+  const p = f.properties || {}, t = p.datasource?.raw || {};
+  const cats = p.categories || [];
+  const specific = cats.filter(c => c.includes(".")).sort((a, b) => b.split(".").length - a.split(".").length)[0] || cats[0] || "";
+  const kind = kindOf(t) || cap(specific.split(".").pop());
+  return { id: "g" + (p.place_id || p.lat + "," + p.lon), name: p.name || t["name:en"] || t.name, lat: p.lat, lng: p.lon,
+    kind, tags: t, score: scoreOf(t), addr: p.address_line2 || p.formatted || "",
+    hours: p.opening_hours || t.opening_hours || "", phone: p.contact?.phone || t.phone || t["contact:phone"] || "",
+    web: p.website || t.website || t["contact:website"] || "", about: t.description || "", photo: "" };
 }
 
 function fromOSM(e) {
   const t = e.tags || {};
   const lat = e.lat ?? e.center?.lat, lng = e.lon ?? e.center?.lon;
-  const name = t["name:en"] || t.name || kindOf(t);
-  let score = 0;
-  if (t.wikipedia || t.wikidata) score += 3;
-  if (t.tourism) score += 1;
-  if (t.opening_hours) score += 1;
-  if (t.website || t["contact:website"]) score += 1;
-  if (t.cuisine) score += 1;
-  if (!t.name) score -= 2;
+  const name = t["name:en"] || t.name || kindOf(t) || "Unnamed place";
   const addr = [t["addr:housename"], t["addr:street"], t["addr:city"] || t["addr:place"]].filter(Boolean).join(", ");
-  return { id: e.type[0] + e.id, name, lat, lng, kind: kindOf(t), tags: t, score, addr,
+  return { id: e.type[0] + e.id, name, lat, lng, kind: kindOf(t) || "Place", tags: t, score: scoreOf(t) - (t.name ? 0 : 2), addr,
     hours: t.opening_hours || "", phone: t.phone || t["contact:phone"] || "", web: t.website || t["contact:website"] || "",
     about: t.description || "", photo: "" };
 }
 
 /* ===== Search ===== */
+const hasKey = () => CONFIG.GEOAPIFY_KEY && !CONFIG.GEOAPIFY_KEY.startsWith("PASTE");
+
 async function search(center) {
   if (!center) return;
   const myReq = ++S.req;
@@ -420,29 +465,43 @@ async function search(center) {
   $("here").hidden = true; $("msg").hidden = true;
   const cat = CATEGORIES[S.cat];
   const key = [S.cat, center.lat.toFixed(3), center.lng.toFixed(3), S.radius].join("|");
+
+  const cached = S.cache.get(key);
+  if (cached) { S.places = cached; S.busy = false; return render(); }
+
+  S.places = []; render(true);
   $("status").innerHTML = `<span class="spin"></span>Looking for ${esc(cat.label.toLowerCase())}…`;
 
-  let list = S.cache.get(key);
-  if (!list) {
-    const A = `(around:${S.radius},${center.lat},${center.lng})`;
-    const q = `[out:json][timeout:25];(${cat.q.replaceAll("{A}", A)});out center tags 150;`;
-    const jobs = [overpass(q).then(els => els.map(fromOSM).filter(p => p.lat != null))];
-    if (cat.wiki) jobs.push(wikiNearby(center, S.radius).catch(() => []));
-    const res = await Promise.allSettled(jobs);
-    if (myReq !== S.req) return;
-    if (res.every(r => r.status === "rejected")) {
-      S.busy = false; setStatus("Search failed");
-      return showMsg("Couldn't load places", "The free map servers are busy or you're offline. Try again in a minute.",
-        { label: "Try again", run: () => search(center) });
+  let wiki = [], main = [], keyBad = false;
+  const show = () => { if (myReq === S.req) { S.places = merge(wiki, main); render(true); } };
+
+  const wikiJob = cat.wiki ? wikiNearby(center, S.radius).then(w => { wiki = w; show(); }).catch(() => {}) : Promise.resolve();
+
+  const mainJob = (async () => {
+    if (hasKey()) {
+      try { main = await geoapify(cat, center, S.radius); show(); return; }
+      catch (e) { if (e.message === "KEY") keyBad = true; }
     }
-    const osm = res[0].status === "fulfilled" ? res[0].value : [];
-    const wiki = res[1]?.status === "fulfilled" ? res[1].value : [];
-    list = merge(wiki, osm);
-    S.cache.set(key, list);
-  }
+    if (myReq === S.req) $("status").innerHTML = `<span class="spin"></span>Trying backup map servers…`;
+    const A = `(around:${S.radius},${center.lat},${center.lng})`;
+    const q = `[out:json][timeout:15];(${cat.q.replaceAll("{A}", A)});out center tags 150;`;
+    main = (await overpass(q)).map(fromOSM).filter(p => p.lat != null);
+    show();
+  })();
+
+  const res = await Promise.allSettled([wikiJob, mainJob]);
   if (myReq !== S.req) return;
-  S.places = list; S.busy = false;
+  S.busy = false;
+  const mainFailed = res[1].status === "rejected";
+  if (!mainFailed) S.cache.set(key, S.places);
   render();
+  if (mainFailed) {
+    const why = keyBad ? "The Geoapify key was rejected. Check the key in index.html."
+      : !hasKey() ? "No Geoapify key is set, and the free backup servers are busy."
+      : "The map data servers didn't respond. Check your internet and try again.";
+    if (!S.places.length) showMsg("Couldn't load places", why, { label: "Try again", run: () => search(center) });
+    else setStatus($("status").textContent + " (some places may be missing)");
+  }
 }
 
 const norm = s => s.toLowerCase().replace(/[^a-z0-9\u0900-\u0dff]+/g, " ").trim();
@@ -477,15 +536,16 @@ function updateDistances() {
   });
 }
 
-function render() {
+function render(partial) {
   const items = visible(); S.shown = items;
   const label = CATEGORIES[S.cat].label.toLowerCase();
   const where = S.me && S.center && km(S.me, S.center) < 0.5 ? "you" : "the map centre";
-  setStatus(`${items.length} ${label} within ${S.radius / 1000} km of ${where}`);
+  if (!partial) setStatus(`${items.length} ${label} within ${S.radius / 1000} km of ${where}`);
 
   S.markers.forEach(m => m.remove()); S.markers = []; S.active = -1;
   const ul = $("list"); ul.innerHTML = "";
   if (!items.length) {
+    if (partial) return;
     const bigger = S.radius < 25000;
     return showMsg(`No ${label} found here`,
       S.places.length ? "Your filters hide everything. Turn some off to see more. Many places on OpenStreetMap don't list opening hours." :
