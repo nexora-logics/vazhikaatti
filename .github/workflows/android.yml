@@ -1,0 +1,85 @@
+name: Build Android app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-build
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Check the signing secret
+        env:
+          SIGNING: ${{ secrets.VAZHIKAATTI_SIGNING }}
+        run: |
+          if [ -z "$SIGNING" ]; then
+            echo "::error::Add the VAZHIKAATTI_SIGNING secret in Settings > Secrets and variables > Actions, then run this again."
+            exit 1
+          fi
+
+      - name: Copy the web app into www
+        run: |
+          mkdir -p www
+          cp index.html manifest.json icon.svg www/
+
+      - name: Install Capacitor
+        run: npm install --no-audit --no-fund
+
+      - name: Create the Android project
+        run: npx cap add android
+
+      - name: App icons
+        continue-on-error: true
+        run: npx capacitor-assets generate --android --iconBackgroundColor "#0E4D45" --iconBackgroundColorDark "#0E4D45"
+
+      - name: Android settings
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: node scripts/android-setup.js
+
+      - name: Copy web files and plugins into the Android project
+        run: npx cap sync android
+
+      - name: Build
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Sign the APK
+        env:
+          SIGNING: ${{ secrets.VAZHIKAATTI_SIGNING }}
+        run: |
+          PASS="${SIGNING%%|*}"
+          printf '%s' "${SIGNING#*|}" | base64 -d > release.jks
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/zipalign" -f -p 4 android/app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
+          "$BT/apksigner" sign --ks release.jks --ks-pass "pass:$PASS" --ks-key-alias vazhikaatti --key-pass "pass:$PASS" --out vazhikaatti.apk aligned.apk
+          rm -f release.jks
+          "$BT/apksigner" verify vazhikaatti.apk
+
+      - name: Publish the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android --yes --cleanup-tag || true
+          gh release create android vazhikaatti.apk \
+            --title "Vazhikaatti for Android (build ${{ github.run_number }})" \
+            --notes "Open this page on your Android phone, download vazhikaatti.apk and open it to install or update."
