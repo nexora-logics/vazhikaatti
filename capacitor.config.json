@@ -1,0 +1,18 @@
+{
+  "appId": "com.nexoralogics.vazhikaatti",
+  "appName": "Vazhikaatti",
+  "webDir": "www",
+  "server": {
+    "hostname": "app.nexoralogics.com",
+    "androidScheme": "https"
+  },
+  "android": {
+    "useLegacyBridge": true
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_pin",
+      "iconColor": "#0E4D45"
+    }
+  }
+}
