@@ -195,6 +195,32 @@
   }
   .sheet .row { padding: 0; flex-wrap: wrap; overflow: visible; }
   .sheet pre { white-space: pre-wrap; font: inherit; font-size: 14px; color: var(--muted); margin: 6px 0; }
+
+  .field { display: block; font-weight: 600; font-size: 14px; margin-top: 12px; }
+  .field input {
+    display: block; width: 100%; margin-top: 4px; font: inherit; font-weight: 400; color: inherit;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+  }
+  .sugg { list-style: none; margin: 4px 0 0; padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .sugg:empty { display: none; }
+  .sugg button { display: block; width: 100%; text-align: left; padding: 10px 12px; border: 0; border-top: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 15px; }
+  .sugg li:first-child button { border-top: 0; }
+  #tr-list { list-style: none; margin: 0; padding: 0; }
+  .trip-sum { padding: 14px 16px; background: var(--tbg); border-bottom: 1px solid var(--line); }
+  .trip-sum p { margin: 0 0 8px; }
+  .progress { height: 6px; background: var(--chip); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .progress i { display: block; height: 100%; width: 0; background: var(--kasavu); transition: width .2s; }
+  .stop.passed { opacity: .45; }
+  .stop .warn { display: block; font-size: 13px; color: var(--bad); font-weight: 600; margin-top: 2px; }
+  .alert-card {
+    position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 25;
+    max-width: 560px; margin: 0 auto; background: var(--brand); color: var(--brand-ink);
+    border-radius: 14px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .alert-card h3 { margin: 0; font-size: 18px; }
+  .alert-card p { margin: 4px 0 10px; }
+  .alert-card .btn { color: var(--brand-ink); border-color: rgba(255,255,255,.5); }
+  .alert-card .btn.go { background: var(--kasavu); border-color: var(--kasavu); color: #0E4D45; }
 </style>
 </head>
 <body>
@@ -214,6 +240,7 @@
 
 <div class="controls">
   <div class="row" role="group" aria-label="Tools">
+    <button class="tool" id="t-trip" aria-pressed="false">Trip mode</button>
     <button class="tool" id="t-ahead" aria-pressed="false">Ahead of me</button>
     <button class="tool" id="t-saved">Saved</button>
     <button class="tool" id="t-audio">Audio guide</button>
@@ -268,12 +295,48 @@
   </div>
 </section>
 
+<section id="trip" hidden aria-label="Trip mode">
+  <div class="plan-form">
+    <h2>Trip mode</h2>
+    <p class="plan-note">See places along your drive in the order you'll reach them, with an alert as each one comes up. Google Maps still does the navigation.</p>
+    <label class="field">From <input id="tr-from" placeholder="My current location" autocomplete="off"></label>
+    <ul class="sugg" id="tr-from-s"></ul>
+    <label class="field">To <input id="tr-to" placeholder="For example, Dwarka" autocomplete="off"></label>
+    <ul class="sugg" id="tr-to-s"></ul>
+    <div class="row" id="tr-kinds" role="group" aria-label="Show">
+      <button class="opt" data-k="see" aria-pressed="true">Attractions</button>
+      <button class="opt" data-k="food" aria-pressed="true">Food</button>
+      <button class="opt" data-k="fuel" aria-pressed="true">Fuel</button>
+      <button class="opt" data-k="toilet" aria-pressed="false">Toilets</button>
+    </div>
+    <div class="row">
+      <select class="opt" id="tr-diet" aria-label="Food type">
+        <option value="">Any food</option><option value="veg">Veg food only</option><option value="nonveg">Non-veg food</option>
+      </select>
+      <select class="opt" id="tr-off" aria-label="Distance from the road">
+        <option value="2">Within 2 km of the road</option><option value="5" selected>Within 5 km of the road</option><option value="10">Within 10 km of the road</option>
+      </select>
+      <select class="opt" id="tr-alert" aria-label="When to alert">
+        <option value="5">Alert 5 km before</option><option value="10" selected>Alert 10 km before</option><option value="20">Alert 20 km before</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button class="btn go" id="tr-go">Find places on the way</button>
+      <button class="btn" id="tr-close">Back to places</button>
+    </div>
+  </div>
+  <div id="tr-sum" class="trip-sum" hidden></div>
+  <ol id="tr-list"></ol>
+</section>
+
 <main>
   <div id="temples"></div>
   <div id="msg" hidden></div>
   <ul id="list"></ul>
   <p class="src">Place data from <a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a>, <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> and <a href="https://www.wikipedia.org" target="_blank" rel="noopener">Wikipedia</a>. Ratings and reviews open in Google Maps.</p>
 </main>
+
+<div id="tr-card" class="alert-card" hidden role="alert"></div>
 
 <div id="sheet-back" class="sheet-back" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
@@ -448,7 +511,7 @@ function startGPS() {
   navigator.geolocation.watchPosition(onPos, onGeoErr, { enableHighAccuracy: true, maximumAge: 30000, timeout: 20000 });
 }
 
-function onPos(p) {
+var onPos = function (p) {
   const me = { lat: p.coords.latitude, lng: p.coords.longitude };
   const first = !S.me;
   S.me = me;
@@ -813,6 +876,7 @@ async function fetchCat(key, center, radius) {
 }
 
 function togglePlan(open) {
+  if (open && typeof T !== "undefined" && T.open) toggleTrip(false);
   P.open = open;
   $("plan-open").setAttribute("aria-pressed", open);
   $("plan").hidden = !open;
@@ -1191,10 +1255,21 @@ function voiceFor(lang) {
 }
 let speakBtn = null;
 function stopSpeaking() {
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  if (NATIVE) Native.tts?.stop().catch(() => {});
+  else if ("speechSynthesis" in window) speechSynthesis.cancel();
   if (speakBtn) { speakBtn.textContent = "Listen"; speakBtn = null; }
 }
 async function speakPlace(p, btn) {
+  if (NATIVE) {
+    if (btn && btn === speakBtn) { stopSpeaking(); return; }
+    stopSpeaking();
+    if (btn) { btn.textContent = "Loading…"; speakBtn = btn; }
+    const g = await guideText(p, S.lang);
+    if (btn) btn.textContent = "Stop";
+    await say(g.text.slice(0, 2000), LANGS[g.lang][1]);
+    if (speakBtn === btn && btn) { btn.textContent = "Listen"; speakBtn = null; }
+    return;
+  }
   if (!("speechSynthesis" in window)) return setStatus("This browser can't read aloud");
   const wasThis = btn && btn === speakBtn;
   stopSpeaking();
@@ -1271,9 +1346,374 @@ function buildTools() {
   window.addEventListener("offline", () => setStatus("You're offline. Saved places will show where available."));
   window.addEventListener("online", () => setStatus("Back online"));
   if ("speechSynthesis" in window) { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); }
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  if (!NATIVE && "serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 
+/* ===== Android app bridge (does nothing on the website) ===== */
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const Native = NATIVE ? {
+  geo: Capacitor.registerPlugin("BackgroundGeolocation"),
+  notify: Capacitor.registerPlugin("LocalNotifications"),
+  tts: Capacitor.registerPlugin("TextToSpeech"),
+  awake: Capacitor.registerPlugin("KeepAwake")
+} : {};
+async function say(text, lang = "en-IN") {
+  if (NATIVE) {
+    try { await Native.tts.speak({ text, lang, rate: 0.95, queueStrategy: 1 }); }
+    catch { try { await Native.tts.speak({ text, lang: "en-IN", rate: 0.95, queueStrategy: 1 }); } catch {} }
+    return;
+  }
+  if (!("speechSynthesis" in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang; u.rate = 0.95;
+  const v = speechSynthesis.getVoices().find(x => x.lang.replace("_", "-").toLowerCase() === lang.toLowerCase());
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+
+/* ===== Trip mode ===== */
+const T = { open: false, from: null, to: null, route: null, places: [], started: false, alerted: new Set(),
+  myAlong: 0, layer: null, watchId: null, wake: null, lastDraw: -99, cardTimer: null };
+const TRIP_CATS = {
+  see: "tourism.attraction,tourism.sights,entertainment.museum,heritage",
+  food: "catering.restaurant,catering.fast_food,catering.cafe,catering.food_court",
+  fuel: "service.vehicle.fuel,service.vehicle.charging_station",
+  toilet: "amenity.toilet"
+};
+const TRIP_LIMIT = { see: 30, food: 30, fuel: 15, toilet: 10 };
+
+function toggleTrip(open) {
+  if (open && P.open) togglePlan(false);
+  T.open = open;
+  $("t-trip").setAttribute("aria-pressed", open);
+  $("trip").hidden = !open;
+  document.querySelector("main").hidden = open;
+  document.querySelectorAll(".controls .row:not(:first-child)").forEach(r => r.hidden = open);
+  if (open) {
+    S.markers.forEach(m => m.remove());
+    if (!T.route) { const saved = store.get("trip", null); if (saved) { Object.assign(T, saved, { places: saved.places || [] }); showTrip(); } }
+    else drawTrip();
+  } else {
+    if (T.layer) { T.layer.remove(); T.layer = null; }
+    render();
+  }
+}
+
+/* place search as you type (Geoapify) */
+function suggest(input, list, onPick) {
+  let timer = null, n = 0;
+  input.oninput = () => {
+    clearTimeout(timer);
+    onPick(null);
+    const q = input.value.trim();
+    if (q.length < 3) { list.innerHTML = ""; return; }
+    timer = setTimeout(async () => {
+      const my = ++n, c = S.me || CONFIG.START;
+      try {
+        const r = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(q)}&filter=countrycode:in` +
+          `&bias=proximity:${c.lng},${c.lat}&limit=5&lang=en&apiKey=${encodeURIComponent(CONFIG.GEOAPIFY_KEY)}`);
+        const f = (await r.json()).features || [];
+        if (my !== n) return;
+        list.innerHTML = f.map((x, i) => `<li><button data-i="${i}">${esc(x.properties.formatted)}</button></li>`).join("");
+        list.querySelectorAll("button").forEach(b => b.onclick = () => {
+          const pr = f[+b.dataset.i].properties;
+          input.value = pr.formatted; list.innerHTML = "";
+          onPick({ lat: pr.lat, lng: pr.lon, name: pr.city || pr.name || pr.formatted.split(",")[0] });
+        });
+      } catch { list.innerHTML = ""; }
+    }, 400);
+  };
+}
+
+/* distance along and away from the route */
+function project(pt) {
+  const R = T.route, k = Math.cos(pt.lat * Math.PI / 180) * 111.32;
+  let best = { off: 1e9, along: 0 };
+  for (let i = 1; i < R.pts.length; i++) {
+    const a = R.pts[i - 1], b = R.pts[i];
+    const ax = (a[1] - pt.lng) * k, ay = (a[0] - pt.lat) * 110.57;
+    if (Math.abs(ax) > 40 || Math.abs(ay) > 40) continue;
+    const bx = (b[1] - pt.lng) * k, by = (b[0] - pt.lat) * 110.57;
+    const dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy;
+    let t = len2 ? -(ax * dx + ay * dy) / len2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    const x = ax + t * dx, y = ay + t * dy, d = Math.hypot(x, y);
+    if (d < best.off) best = { off: d, along: a[2] + t * (b[2] - a[2]) };
+  }
+  return best;
+}
+
+async function getRoute(from, to) {
+  const r = await fetch(`https://api.geoapify.com/v1/routing?waypoints=${from.lat},${from.lng}|${to.lat},${to.lng}&mode=drive` +
+    `&apiKey=${encodeURIComponent(CONFIG.GEOAPIFY_KEY)}`);
+  if (!r.ok) throw new Error("route " + r.status);
+  const f = (await r.json()).features?.[0];
+  if (!f) throw new Error("no route");
+  const g = f.geometry, lines = g.type === "MultiLineString" ? g.coordinates : [g.coordinates];
+  const pts = []; let cum = 0, last = null;
+  for (const line of lines) for (const [lng, lat] of line) {
+    const here = { lat, lng };
+    if (last) { const d = km(last, here); if (d < 0.15) continue; cum += d; }
+    pts.push([lat, lng, cum]); last = here;
+  }
+  return { pts, total: cum, time: f.properties.time, km: f.properties.distance / 1000 };
+}
+
+function samplePoints(route) {
+  const step = route.total > 200 ? 20 : 15, out = [];
+  let next = 0;
+  for (const p of route.pts) if (p[2] >= next) { out.push({ lat: p[0], lng: p[1] }); next += step; }
+  const end = route.pts[route.pts.length - 1];
+  out.push({ lat: end[0], lng: end[1] });
+  return { pts: out, radius: (step / 2 + 6) * 1000 };
+}
+
+/* run requests about 4 a second (the free plan allows 5) */
+async function throttled(jobs, onDone) {
+  const out = []; let i = 0, done = 0;
+  const worker = async () => {
+    while (i < jobs.length) {
+      const j = i++, t0 = Date.now();
+      try { out[j] = await jobs[j](); } catch { out[j] = []; }
+      onDone(++done, jobs.length);
+      await new Promise(r => setTimeout(r, Math.max(0, 500 - (Date.now() - t0))));
+    }
+  };
+  await Promise.all([worker(), worker()]);
+  return out;
+}
+
+async function findTripPlaces() {
+  const from = T.fromPick || (S.me ? { ...S.me, name: "My location" } : null);
+  const to = T.toPick;
+  if (!from) return tripMsg("Your location isn't known yet. Allow location, or type a starting place in From.");
+  if (!to) return tripMsg("Type where you're going in To, then pick a place from the list.");
+  $("tr-go").disabled = true;
+  $("tr-list").innerHTML = "";
+  tripMsg(`Finding the route to ${esc(to.name)}…`, true);
+  try {
+    const route = await getRoute(from, to);
+    Object.assign(T, { from, to, route, places: [], started: false, alerted: new Set(), myAlong: 0 });
+    stopTrip(true);
+    const { pts, radius } = samplePoints(route);
+    const jobs = [];
+    for (const c of pts) {
+      for (const [k, cats] of Object.entries(TRIP_CATS))
+        jobs.push(() => geoCats(cats, c, radius, TRIP_LIMIT[k]).then(l => l.map(p => ({ ...p, group: k }))));
+      jobs.push(() => wikiNearby(c, 10000).then(l => l.map(p => ({ ...p, group: "see" }))));
+    }
+    tripMsg(`Looking for places along ${Math.round(route.km)} km…`, true);
+    const res = await throttled(jobs, (d, n) => { const bar = $("tr-bar"); if (bar) bar.style.width = Math.round(d / n * 100) + "%"; });
+    const seen = new Map();
+    for (const p of res.flat()) {
+      if (!p || p.lat == null || !p.name) continue;
+      const key = p.group + "|" + norm(p.name) + "|" + p.lat.toFixed(3) + "," + p.lng.toFixed(3);
+      if (seen.has(key)) continue;
+      const pr = project(p);
+      if (pr.off > 10.5) continue;
+      seen.set(key, { ...p, along: pr.along, off: pr.off });
+    }
+    for (const t of TEMPLES) {
+      const pr = project(t);
+      if (pr.off > 10) continue;
+      const hit = [...seen.values()].find(p => km(p, t) < 3 && t.match.test(p.name));
+      if (hit) Object.assign(hit, { temple: t, hours: t.hours || hit.hours, score: (hit.score || 0) + 4 });
+      else seen.set("t" + t.name, { id: "t" + t.name, name: t.name, lat: t.lat, lng: t.lng, kind: "Hindu temple", tags: {}, score: 9,
+        hours: t.hours, temple: t, group: "see", along: pr.along, off: pr.off });
+    }
+    // drop near-duplicates of the same place from different sources
+    const list = [...seen.values()].sort((a, b) => a.along - b.along);
+    T.places = list.filter((p, i) => !list.slice(Math.max(0, i - 8), i).some(q => q.group === p.group && km(q, p) < 0.15));
+    saveTrip();
+    showTrip();
+  } catch (e) {
+    tripMsg(/route/.test(e.message) ? "Couldn't find a driving route between those places. Try a nearby town name." : "Something went wrong. Check your internet and try again.");
+  } finally { $("tr-go").disabled = false; }
+}
+
+function tripMsg(text, loading) {
+  const box = $("tr-sum");
+  box.hidden = false;
+  box.innerHTML = `<p>${loading ? '<span class="spin"></span>' : ""}${text}</p>${loading ? '<div class="progress"><i id="tr-bar"></i></div>' : ""}`;
+}
+
+function saveTrip() {
+  const slimT = p => ({ id: p.id, name: p.name, lat: p.lat, lng: p.lng, kind: p.kind, group: p.group, along: p.along, off: p.off,
+    score: p.score, hours: p.temple ? "" : p.hours, phone: p.phone, cats: p.cats, link: p.link,
+    tags: { cuisine: p.tags?.cuisine, "diet:vegetarian": p.tags?.["diet:vegetarian"] }, temple: p.temple ? p.temple.name : "" });
+  const ok = store.set("trip", { from: T.from, to: T.to, route: T.route, places: T.places.map(slimT), savedAt: Date.now() });
+  if (!ok) setStatus("Trip is too big to keep offline on this phone");
+}
+function templeOf(p) { return typeof p.temple === "string" ? TEMPLES.find(t => t.name === p.temple) : p.temple; }
+
+const tripKinds = () => [...$("tr-kinds").querySelectorAll("[aria-pressed=true]")].map(b => b.dataset.k);
+function tripVisible() {
+  const kinds = tripKinds(), diet = $("tr-diet").value, off = +$("tr-off").value;
+  return T.places.filter(p => kinds.includes(p.group) && p.off <= off && (p.group !== "food" || !diet || dietOf(p) === diet));
+}
+const etaAt = along => new Date((T.startedAt || Date.now()) + T.route.time * 1000 * ((along - (T.started ? T.startAlong : 0)) / T.route.total));
+const fmtHrs = sec => { const m = Math.round(sec / 60); return m < 60 ? m + " min" : Math.floor(m / 60) + " hr" + (m % 60 ? " " + (m % 60) + " min" : ""); };
+
+function showTrip() {
+  if (!T.route) return;
+  const R = T.route, items = tripVisible();
+  const arrive = clock(new Date(Date.now() + R.time * 1000));
+  $("tr-sum").hidden = false;
+  $("tr-sum").innerHTML = `
+    <p><strong>${esc(T.from.name)} to ${esc(T.to.name)}</strong>: ${Math.round(R.km)} km, about ${fmtHrs(R.time)}.
+      ${T.started ? "" : `If you leave now, you'll arrive around ${arrive}.`} ${items.length} places on the way.</p>
+    <p id="tr-next" class="note"></p>
+    <div class="actions">
+      ${T.started ? `<button class="btn red" id="tr-stop">Stop trip</button>` : `<button class="btn go" id="tr-start">Start trip</button>`}
+      <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${T.to.lat},${T.to.lng}&travelmode=driving">Navigate in Google Maps</a>
+    </div>
+    <p class="note">${NATIVE ? "Alerts keep working with the phone locked or Google Maps in front." :
+      "Keep Vazhikaatti open on screen for alerts. Start navigation in Google Maps first, then come back here. Google Maps keeps speaking in the background."}</p>`;
+  $("tr-start")?.addEventListener("click", startTrip);
+  $("tr-stop")?.addEventListener("click", () => stopTrip());
+  const ul = $("tr-list"); ul.innerHTML = "";
+  items.slice(0, 250).forEach(p => {
+    const passed = T.started && p.along < T.myAlong - 0.3;
+    const ahead = p.along - T.myAlong;
+    const eta = etaAt(p.along), t = templeOf(p);
+    let warn = "";
+    if (t && t.hours && !passed && isOpenNow(t.hours, eta) === false) warn = `Closed when you arrive (around ${clock(eta)}). ${nextChange(t.hours, eta).text.replace("Closed now, ", "")}.`;
+    const li = document.createElement("li");
+    li.className = "stop" + (passed ? " passed" : "");
+    li.innerHTML = `<time>${T.started && !passed ? fmtKm(ahead) : "km " + Math.round(p.along)}</time><div>
+      <h3>${esc(p.name)}</h3>
+      <p class="kind">${esc(p.kind || "")}${p.group === "food" && dietOf(p) ? `, ${dietOf(p) === "veg" ? "Veg" : "Non-veg"}` : ""}</p>
+      <span class="drive">${p.off < 0.3 ? "On the road" : fmtKm(p.off) + " off the road"}${passed ? ", passed" : `, around ${clock(eta)}`}</span>
+      ${warn ? `<span class="warn">${esc(warn)}</span>` : ""}
+      <div class="actions">
+        <a class="btn go" target="_blank" rel="noopener" href="${stopUrl(p)}">Add as stop</a>
+        <a class="btn" target="_blank" rel="noopener" href="${dirUrl(p)}">Go here</a>
+        <button class="btn${isSaved(p.id) ? " saved" : ""}" data-save>${isSaved(p.id) ? "Saved ★" : "Save"}</button>
+      </div></div>`;
+    li.querySelector("[data-save]").onclick = e => { const on = toggleSave(p); e.currentTarget.textContent = on ? "Saved ★" : "Save"; };
+    ul.appendChild(li);
+  });
+  if (!items.length) ul.innerHTML = `<li class="stop end"><time></time><div><h3>Nothing matches these filters</h3><span class="drive">Try more categories or a wider distance from the road.</span></div></li>`;
+  drawTrip(items);
+  updateNext();
+}
+const stopUrl = p => `https://www.google.com/maps/dir/?api=1&destination=${T.to.lat},${T.to.lng}&waypoints=${p.lat},${p.lng}&travelmode=driving`;
+
+function drawTrip(items = tripVisible()) {
+  if (!S.map || !T.route) return;
+  if (T.layer) T.layer.remove();
+  T.layer = L.layerGroup().addTo(S.map);
+  const line = T.route.pts.map(p => [p[0], p[1]]);
+  L.polyline(line, { color: "#0E4D45", weight: 5, opacity: .85 }).addTo(T.layer);
+  items.slice(0, 250).forEach(p => L.circleMarker([p.lat, p.lng], {
+    radius: 6, weight: 2, color: "#E8C75A", fillColor: { see: "#0E4D45", food: "#9A7410", fuel: "#1A73E8", toilet: "#5B6964" }[p.group], fillOpacity: 1
+  }).bindTooltip(p.name).addTo(T.layer));
+  if (!T.started) S.map.fitBounds(L.latLngBounds(line), { padding: [20, 20] });
+}
+
+function updateNext() {
+  const el = $("tr-next"); if (!el) return;
+  if (!T.started) { el.textContent = ""; return; }
+  const n = tripVisible().find(p => p.along > T.myAlong + 0.2);
+  el.textContent = n ? `Next: ${n.name} in ${fmtKm(n.along - T.myAlong)}` : "No more places on the way.";
+}
+
+async function startTrip() {
+  if (!S.me && !NATIVE) return setStatus("Waiting for your location…");
+  T.started = true; T.startedAt = Date.now();
+  const here = S.me ? project(S.me) : { along: 0, off: 0 };
+  T.myAlong = T.startAlong = here.along;
+  T.alerted = new Set(T.places.filter(p => p.along < T.myAlong).map(p => p.id));
+  if (NATIVE) {
+    try { await Native.notify.requestPermissions(); } catch {}
+    try { await Native.awake.keepAwake(); } catch {}
+    try {
+      T.watchId = await Native.geo.addWatcher({
+        backgroundTitle: "Vazhikaatti is tracking your trip",
+        backgroundMessage: `To ${T.to.name}. Open the app to stop.`,
+        requestPermissions: true, stale: false, distanceFilter: 100
+      }, (loc, err) => {
+        if (err) {
+          if (err.code === "NOT_AUTHORIZED" && confirm("Vazhikaatti needs location access for trip alerts. Open settings?")) Native.geo.openSettings();
+          return;
+        }
+        const me = { lat: loc.latitude, lng: loc.longitude };
+        S.me = me; S.meMarker?.setLatLng(me);
+        tripTick(me);
+      });
+    } catch { setStatus("Couldn't start background tracking"); }
+  } else {
+    try { T.wake = await navigator.wakeLock?.request("screen"); } catch {}
+    document.addEventListener("visibilitychange", rewake);
+  }
+  say(`Trip started. ${tripVisible().filter(p => p.along > T.myAlong).length} places on the way to ${T.to.name}.`);
+  showTrip();
+  if (S.me) tripTick(S.me);
+}
+async function rewake() { if (T.started && document.visibilityState === "visible") { try { T.wake = await navigator.wakeLock?.request("screen"); } catch {} } }
+
+function stopTrip(silent) {
+  if (NATIVE) {
+    if (T.watchId) Native.geo.removeWatcher({ id: T.watchId }).catch(() => {});
+    Native.awake?.allowSleep?.().catch(() => {});
+  } else {
+    T.wake?.release?.().catch(() => {}); T.wake = null;
+    document.removeEventListener("visibilitychange", rewake);
+  }
+  T.watchId = null;
+  const was = T.started;
+  T.started = false;
+  $("tr-card").hidden = true;
+  if (was && !silent) { say("Trip stopped."); showTrip(); }
+}
+
+function tripTick(me) {
+  if (!T.started || !T.route) return;
+  const pr = project(me);
+  T.myAlong = Math.max(T.myAlong, pr.along);
+  if (pr.off > 3) setStatus("You seem to be off the planned route. Alerts continue for places near the route.");
+  const alertKm = +$("tr-alert").value;
+  const next = tripVisible().find(p => !T.alerted.has(p.id) && p.along >= T.myAlong - 0.2 && p.along - T.myAlong <= alertKm);
+  if (next) { T.alerted.add(next.id); tripAlert(next, Math.max(0, next.along - T.myAlong)); }
+  if (Math.abs(T.myAlong - T.lastDraw) > 1) { T.lastDraw = T.myAlong; if (T.open) showTrip(); }
+  else updateNext();
+  if (T.myAlong > T.route.total - 0.5) { say(`You have reached ${T.to.name}.`); stopTrip(true); if (T.open) showTrip(); }
+}
+
+function tripAlert(p, ahead) {
+  const t = templeOf(p), eta = etaAt(p.along);
+  const closed = t && t.hours && isOpenNow(t.hours, eta) === false;
+  const body = `${fmtKm(ahead)} ahead, ${p.off < 0.3 ? "on the road" : fmtKm(p.off) + " off the road"}${closed ? ". Darshan may be closed when you arrive" : ""}`;
+  const card = $("tr-card");
+  card.innerHTML = `<h3>${esc(p.name)}</h3><p>${esc(body)}</p><div class="actions">
+    <a class="btn go" target="_blank" rel="noopener" href="${stopUrl(p)}">Add as stop</a>
+    <a class="btn" target="_blank" rel="noopener" href="${dirUrl(p)}">Go here</a>
+    <button class="btn" id="tr-dismiss">Dismiss</button></div>`;
+  card.hidden = false;
+  $("tr-dismiss").onclick = () => { card.hidden = true; };
+  clearTimeout(T.cardTimer); T.cardTimer = setTimeout(() => { card.hidden = true; }, 90000);
+  try { navigator.vibrate?.([300, 150, 300]); } catch {}
+  const spoken = `${p.name}. ${p.kind ? p.kind + ". " : ""}${body.replace(/km/g, "kilometres").replace(/ m /g, " metres ")}.`;
+  say(spoken);
+  if (NATIVE) Native.notify.schedule({ notifications: [{ id: Math.floor(Math.random() * 2e9), title: p.name, body }] }).catch(() => {});
+}
+
+function buildTrip() {
+  $("t-trip").onclick = () => toggleTrip(!T.open);
+  $("tr-close").onclick = () => toggleTrip(false);
+  suggest($("tr-from"), $("tr-from-s"), v => T.fromPick = v);
+  suggest($("tr-to"), $("tr-to-s"), v => T.toPick = v);
+  $("tr-go").onclick = findTripPlaces;
+  $("tr-kinds").querySelectorAll("button").forEach(b => b.onclick = () => {
+    b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true"); if (T.route) showTrip();
+  });
+  ["tr-diet", "tr-off"].forEach(id => $(id).onchange = () => { if (T.route) showTrip(); });
+  // keep trip alerts going from the normal GPS on the website
+  const base = onPos;
+  onPos = p => { base(p); if (!NATIVE && T.started) tripTick({ lat: p.coords.latitude, lng: p.coords.longitude }); };
+}
+
+buildTrip();
 buildTools();
 buildPlanControls();
 init();
